@@ -12,7 +12,7 @@ async def main():
     bot = Bot(token=config.bot_token)
     dp = Dispatcher(storage=MemoryStorage())
 
-    dp.include_router(user.router)
+    dp.include_router(user.order_router)
 
     print("Bot is starting... !")
     print("https://t.me/online_ai_casa_bot")
