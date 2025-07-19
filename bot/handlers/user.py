@@ -1,3 +1,5 @@
+import datetime
+
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
@@ -6,6 +8,8 @@ from aiogram.filters import CommandStart
 from bot.handlers.states import TicketOrder
 from bot.keyboards.default import get_keyboard_seat_classes, get_keyboard_pay_btn
 from bot.services.crypto import create_invoice
+from bot.services.routes import get_route_price
+from bot.storage import save_order
 
 order_router = Router()
 
@@ -54,11 +58,30 @@ async def process_confirm(message: Message, state: FSMContext):
     data = await state.get_data()
 
     # for example amount
-    price = 3.5
+    price = get_route_price(departure=data["departure"], destination=data["destination"])
+    data["price"] = price
+
     invoice = await create_invoice(amount=price)
 
+    #  set order
+    order = {
+        "user_id": message.from_user.id,
+        "username": message.from_user.username,
+        "invoice_url": invoice.bot_invoice_url,
+        "create_date": datetime.datetime.utcnow(),
+        **data,
+    }
+
+    #  save order
+    save_order(order)
+
     await message.answer(
-        f"🎟 Ticket Confirmed!\nPay <b>{price} USDT</b> to complete booking:",
+        f"🎟 Ticket Confirmed!\n"
+        f"<b>From:</b> {data['departure']} ➡ <b>{data['destination']}</b>\n"
+        f"<b>Date:</b> {data['travel_date']}\n"
+        f"<b>Seat:</b> {data['seat_type']}\n"
+        f"<b>Price:</b> <code>{price} USDT</code>\n\n"
+        f"👇 Click below to pay with CryptoBot:",
         reply_markup=get_keyboard_pay_btn(invoice=invoice)
     )
 
