@@ -4,7 +4,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.config import get_config
-from bot.handlers import user
+from bot.handlers import user, admin
 
 
 async def main():
@@ -13,6 +13,7 @@ async def main():
     dp = Dispatcher(storage=MemoryStorage())
 
     dp.include_router(user.order_router)
+    dp.include_router(admin.admin_router)
 
     print("Bot is starting... !")
     print("https://t.me/online_ai_casa_bot")
