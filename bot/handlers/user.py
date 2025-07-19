@@ -4,7 +4,8 @@ from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.filters import CommandStart
 
 from bot.handlers.states import TicketOrder
-from bot.keyboards.default import get_keyboard_seat_classes
+from bot.keyboards.default import get_keyboard_seat_classes, get_keyboard_pay_btn
+from bot.services.crypto import create_invoice
 
 order_router = Router()
 
@@ -47,7 +48,18 @@ async def process_seat_type(message: Message, state: FSMContext):
     )
     await message.answer(summary, reply_markup=ReplyKeyboardRemove())
 
+
 @order_router.message(TicketOrder.confirm)
 async def process_confirm(message: Message, state: FSMContext):
+    data = await state.get_data()
+
+    # for example amount
+    price = 3.5
+    invoice = await create_invoice(amount=price)
+
+    await message.answer(
+        f"🎟 Ticket Confirmed!\nPay <b>{price} USDT</b> to complete booking:",
+        reply_markup=get_keyboard_pay_btn(invoice=invoice)
+    )
+
     await state.clear()
-    await message.answer("🎟 Your order has been confirmed! (We'll add payment next 👇)")
