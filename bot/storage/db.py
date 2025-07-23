@@ -1,7 +1,12 @@
 import aiosqlite
 from typing import List, Dict
 
-DB_PATH = "orders.db"
+
+from bot.config import get_config
+
+config = get_config()
+
+DB_PATH = config.db_path
 
 
 async def init_db():

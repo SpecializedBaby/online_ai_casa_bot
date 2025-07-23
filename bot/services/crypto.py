@@ -1,14 +1,19 @@
-import os
-
 from aiocryptopay import AioCryptoPay, Networks
 from aiocryptopay.const import InvoiceStatus
 from aiocryptopay.models.invoice import Invoice
-from dotenv import load_dotenv
 
+from bot.config import get_config
 
-load_dotenv()
+config = get_config()
 
-crypto = AioCryptoPay(token=os.getenv("CRYPTO_PAY_TOKEN"), network=Networks.TEST_NET)  # Networks.MAIN_NET on prod action
+network_API = None
+
+if config.network_api_crypto_pay == "TEST_NET":
+    network_API = Networks.TEST_NET
+elif config.network_api_crypto_pay == "MAIN_NET":
+    network_API = Networks.MAIN_NET
+
+crypto = AioCryptoPay(token=config.crypto_pay_token, network=network_API)
 
 
 async def get_info_crypto_app():

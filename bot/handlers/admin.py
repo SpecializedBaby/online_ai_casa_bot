@@ -1,20 +1,18 @@
-import os
-
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
-from dotenv import load_dotenv
 
+from bot.config import get_config
 from bot.storage.db import get_all_orders
 
-load_dotenv()
+config = get_config()
 
 admin_router = Router()
 
 
 @admin_router.message(Command("orders"))
 async def get_orders(message: Message):
-    if not str(message.from_user.id) in os.getenv("ADMIN_IDS"):
+    if not str(message.from_user.id) in config.admin_ids:
         await message.answer("🚫 You are not authorized.")
         return
 
