@@ -28,7 +28,7 @@ async def get_info_crypto_app():
 
 
 async def create_invoice(amount: float, currency: str = "USDT") -> Invoice:
-    invoice = await crypto.create_invoice(asset='USDT', amount=amount)
+    invoice = await crypto.create_invoice(asset=currency, amount=amount)
     print(f"URL invoice: {invoice.bot_invoice_url}")
     return invoice
 
@@ -47,10 +47,10 @@ async def create_fiat_invoice(
     return fiat_invoice
 
 
-async def get_old_invoice(invoice_id: int) -> InvoiceStatus | str:
-    old_invoice = await crypto.get_invoices(invoice_ids=invoice_id)
-    print(old_invoice.status)
-    return old_invoice.status
+async def get_invoice_status(invoice_id: int) -> InvoiceStatus | str:
+    invoice = await crypto.get_invoices(invoice_ids=invoice_id)
+    print(invoice.status)
+    return invoice.status
 
 
 def get_invoice_id(invoice: Invoice) -> int:

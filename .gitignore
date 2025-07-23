@@ -2,3 +2,4 @@ venv
 DOC.txt
 .idea/
 .env
+*.db

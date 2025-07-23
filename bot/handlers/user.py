@@ -9,7 +9,7 @@ from bot.handlers.states import TicketOrder
 from bot.keyboards.default import get_keyboard_seat_classes, get_keyboard_pay_btn
 from bot.services.crypto import create_invoice
 from bot.services.routes import get_route_price
-from bot.storage import save_order
+from bot.storage.db import save_order
 
 order_router = Router()
 
@@ -68,12 +68,13 @@ async def process_confirm(message: Message, state: FSMContext):
         "user_id": message.from_user.id,
         "username": message.from_user.username,
         "invoice_url": invoice.bot_invoice_url,
+        "invoice_id": invoice.invoice_id,
         "create_date": datetime.datetime.utcnow(),
         **data,
     }
 
     #  save order
-    save_order(order)
+    await save_order(order)
 
     await message.answer(
         f"🎟 Ticket Confirmed!\n"
