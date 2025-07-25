@@ -1,13 +1,52 @@
-from aiogram import Router
+import csv
+import io
+
+import aiosqlite
+from aiogram import Router, F, Bot
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import Message, FSInputFile, Document
 
 from bot.config import get_config
-from bot.storage.db import get_all_orders
+from bot.storage.db import get_all_orders, get_paid_orders
 
 config = get_config()
 
 admin_router = Router()
+
+pending_ticket_uploads = {}  # key: admin_id, value: order_id
+
+@admin_router.message(Command("attach_invoice"))
+async def prepare_ticket_upload(message: Message):
+    if not str(message.from_user.id) in config.admin_ids:
+        await message.answer("❌ Unauthorized.")
+        return
+
+    try:
+        order_id = int(message.text.split()[1])
+        pending_ticket_uploads[message.from_user.id] = order_id
+        await message.answer(f"📎 Upload the PDF ticket for Order #{order_id}.")
+    except:
+        await message.answer("❗ Usage: /attach_invoice <order_id>")
+
+@admin_router.message(F.document)
+async def handle_pdf_upload(message: Message, bot: Bot):
+    admin_id = message.from_user.id
+    if not str(admin_id) in config.admin_ids:
+        return  # Not attaching anything
+    order_id = pending_ticket_uploads.pop(admin_id)
+
+    # Get order info from DB
+    async with aiosqlite.connect(config.db_path) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("SELECT user_id FROM orders WHERE id = ?", (order_id,))
+        result = await cursor.fetchone()
+
+    if result:
+        user_id = result["user_id"]
+        await bot.send_document(chat_id=user_id, document=message.document.file_id, caption="🎟 Your ticket PDF is ready!")
+        await message.answer("✅ Ticket sent to user.")
+    else:
+        await message.answer("❌ Order not found.")
 
 
 @admin_router.message(Command("orders"))
@@ -34,3 +73,27 @@ async def get_orders(message: Message):
         )
 
         await message.answer(answer_text)
+
+
+@admin_router.message(Command("export_paid"))
+async def export_paid_orders(message: Message):
+    if not str(message.from_user.id) in config.admin_ids:
+        await message.answer("🚫 You are not authorized.")
+        return
+
+    orders = await get_paid_orders()
+    if not orders:
+        await message.answer("No paid orders found.")
+        return
+
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=orders[0].keys())
+    writer.writeheader()
+    for row in orders:
+        writer.writerow(dict(row))
+
+    output.seek(0)
+    with open("paid_orders.csv", "w", encoding="utf-8") as f:
+        f.write(output.read())
+
+    await message.answer_document(FSInputFile("paid_orders.csv"), caption="📦 Paid orders exported.")

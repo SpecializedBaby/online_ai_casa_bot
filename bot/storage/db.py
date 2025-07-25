@@ -54,5 +54,18 @@ async def get_all_orders() -> List[Dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute("SELECT * FROM orders ORDER BY id DESC")
-        rows = await cursor.fetchall()
-        return rows
+        return await cursor.fetchall()
+
+async def get_user_orders(user_id: int) -> List[Dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT * FROM orders WHERE user_id = ? AND status = 'paid' ORDER BY id DESC",
+            (user_id,))
+        return await cursor.fetchall()
+
+async def get_paid_orders() -> List[Dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("SELECT * FROM orders WHERE status = 'paid'")
+        return await cursor.fetchall()

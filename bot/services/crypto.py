@@ -54,7 +54,7 @@ async def create_fiat_invoice(
 
 async def get_invoice_status(invoice_id: int) -> InvoiceStatus | str:
     invoice = await crypto.get_invoices(invoice_ids=invoice_id)
-    print(invoice.status)
+    print(invoice.status)  # active, paid
     return invoice.status
 
 

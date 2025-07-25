@@ -3,3 +3,4 @@ DOC.txt
 .idea/
 .env
 *.db
+*.csv

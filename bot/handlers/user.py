@@ -3,13 +3,13 @@ import datetime
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 
 from bot.handlers.states import TicketOrder
 from bot.keyboards.default import get_keyboard_seat_classes, get_keyboard_pay_btn
 from bot.services.crypto import create_invoice
 from bot.services.routes import get_route_price
-from bot.storage.db import save_order
+from bot.storage.db import save_order, get_user_orders
 
 order_router = Router()
 
@@ -87,3 +87,22 @@ async def process_confirm(message: Message, state: FSMContext):
     )
 
     await state.clear()
+
+@order_router.message(Command("myorders"))
+async def user_order_history(message: Message):
+    orders = await get_user_orders(message.from_user.id)
+    if not orders:
+        await message.answer("📭 You have no paid tickets.")
+        return
+
+    text = ""
+    for i, o in enumerate(orders, 1):
+        text += (
+            f"🎫 <b>Ticket #{i}</b>\n"
+            f"From: {o['departure']} ➡ {o['destination']}\n"
+            f"Date: {o['travel_date']}\n"
+            f"Seat: {o['seat_type']}\n"
+            f"Price: {o['price']} USDT\n\n"
+        )
+
+    await message.answer(text)
