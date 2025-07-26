@@ -7,6 +7,7 @@ from aiogram.filters import Command
 from aiogram.types import Message, FSInputFile, Document
 
 from bot.config import get_config
+from bot.services.routes import save_route_in_db
 from bot.storage.db import get_all_orders, get_paid_orders
 
 config = get_config()
@@ -14,6 +15,22 @@ config = get_config()
 admin_router = Router()
 
 pending_ticket_uploads = {}  # key: admin_id, value: order_id
+
+
+@admin_router.message(Command("add_route"))
+async def update_routes(message: Message):
+    if not str(message.from_user.id) in config.admin_ids:
+        await message.answer("❌ Unauthorized.")
+        return
+
+    try:
+        _, dep, dest, cost = message.text.strip().split()
+        cost = float(cost)
+        await save_route_in_db(dep, dest, cost)
+        await message.answer(f"✅ Route {dep} → {dest} added with price {cost} USDT.")
+    except Exception as e:
+        print(e)  # debug
+        await message.answer("❗ Usage: /add_route <departure> <destination> <price>")
 
 @admin_router.message(Command("attach_invoice"))
 async def prepare_ticket_upload(message: Message):

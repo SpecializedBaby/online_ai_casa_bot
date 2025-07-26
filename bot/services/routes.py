@@ -1,15 +1,24 @@
-#  Later have to replace this with a database
+import aiosqlite
 
-ROUTES = {
-    ("Berlin", "Munich"): 20.0,
-    ("Berlin", "Hamburg"): 15.0,
-    ("Munich", "Frankfurt"): 18.0,
-    ("Hamburg", "Cologne"): 22.0,
-}
+from bot.config import get_config
 
-DEFAULT_PRICE = 10.0
+config = get_config()
+DB_PATH = config.db_path
 
 
-def get_route_price(departure: str, destination: str) -> float:
-    route = (departure.title(), destination.title())
-    return ROUTES.get(route, DEFAULT_PRICE)
+async def get_route_price(departure: str, destination: str) -> float:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "SELECT price FROM routes WHERE departure = ? AND destination = ?",
+            (departure.title(), destination.title())
+        )
+        result = cursor.fetchone()
+        return result[0] if result else None
+
+async def save_route_in_db(dep: str, dest: str, cost: float):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "INSERT INTO routes (departure, destination, cost) VALUES (?, ?, ?)",
+            (dep.title(), dest.title(), cost)
+        )
+        await db.commit()

@@ -11,6 +11,7 @@ DB_PATH = config.db_path
 
 async def init_db():
     async with aiosqlite.connect(DB_PATH) as db:
+        # create orders table
         await db.execute("""
             CREATE TABLE IF NOT EXISTS orders (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,6 +26,16 @@ async def init_db():
                 invoice_id INTEGER,
                 status TEXT DEFAULT 'unpaid',
                 created_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # create routes table
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS routes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                departure TEXT,
+                destination TEXT,
+                cost REAL
             )
         """)
         await db.commit()
