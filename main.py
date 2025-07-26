@@ -5,19 +5,8 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.config import get_config
 from bot.handlers import user, admin
-from bot.services.crypto import get_invoice_status
-from bot.storage.db import get_unpaid_orders, mark_order_paid, init_db
-
-
-async def monitor_payments(bot: Bot):
-    while True:
-        unpaid_orders = await get_unpaid_orders()
-        for order in unpaid_orders:
-            status = await get_invoice_status(order["invoice_id"])
-            if status == "paid":
-                await bot.send_message(order["user_id"], "✅ Payment received. Your ticket is confirmed!")
-                await mark_order_paid(order["id"])
-        await asyncio.sleep(30)  # check every 30 seconds
+from bot.storage.db import init_db
+from bot.tasks import monitor_payments
 
 
 async def main():
