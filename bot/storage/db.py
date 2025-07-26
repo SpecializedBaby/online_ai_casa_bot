@@ -20,9 +20,11 @@ async def init_db():
                 destination TEXT,
                 travel_date TEXT,
                 seat_type TEXT,
+                quantity INTEGER DEFAULT 1,
                 price REAL,
                 invoice_id INTEGER,
-                status TEXT DEFAULT 'unpaid'
+                status TEXT DEFAULT 'unpaid',
+                created_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
         """)
         await db.commit()
@@ -30,12 +32,13 @@ async def init_db():
 async def save_order(data: Dict):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("""
-            INSERT INTO orders (user_id, username, departure, destination, travel_date, seat_type, price, invoice_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO orders (user_id, username, departure, destination, travel_date, seat_type, quantity, price, invoice_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             data["user_id"], data["username"], data["departure"],
             data["destination"], data["travel_date"],
-            data["seat_type"], data["price"], data["invoice_id"]
+            data["seat_type"], data["quantity"], data["price"],
+            data["invoice_id"],
         ))
         await db.commit()
 
@@ -69,3 +72,8 @@ async def get_paid_orders() -> List[Dict]:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute("SELECT * FROM orders WHERE status = 'paid'")
         return await cursor.fetchall()
+
+async def mark_order_canceled(order_id: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE orders SET status = 'canceled' WHERE id = ?", (order_id,))
+        await db.commit()

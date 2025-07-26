@@ -6,4 +6,5 @@ class TicketOrder(StatesGroup):
     destination = State()
     travel_date = State()
     seat_type = State()
+    quantity = State()
     confirm = State()
