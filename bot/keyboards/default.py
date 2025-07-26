@@ -2,6 +2,14 @@ from aiocryptopay.models.invoice import Invoice
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 
 
+def general_keyboard_menu() -> ReplyKeyboardMarkup:
+    keyboard = [
+        [KeyboardButton(text="/book")],
+        [KeyboardButton(text="/my_orders"), KeyboardButton(text="/help")]
+    ]
+    return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
+
+
 def get_keyboard_seat_classes() -> ReplyKeyboardMarkup:
     keyboard = [
         [KeyboardButton(text="Standard"), KeyboardButton(text="Business")],
@@ -34,3 +42,11 @@ def get_keyboard_confirmation() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="❌ Cancel", callback_data="cancel_order")]
     ])
     return confirm_kb
+
+
+def get_keyboard_payment_method() -> InlineKeyboardMarkup:
+    keyboard = [
+        [InlineKeyboardButton(text="💸 CryptoBot", callback_data="pay_cryptobot")],
+        [InlineKeyboardButton(text="💵 Manual", callback_data="pay_manual")]
+    ]
+    return InlineKeyboardMarkup(keyboard=keyboard)

@@ -6,13 +6,13 @@ config = get_config()
 DB_PATH = config.db_path
 
 
-async def get_route_price(departure: str, destination: str) -> float:
+async def get_route_price(departure: str, destination: str) -> float | None:
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
-            "SELECT price FROM routes WHERE departure = ? AND destination = ?",
+            "SELECT cost FROM routes WHERE departure = ? AND destination = ?",
             (departure.title(), destination.title())
         )
-        result = cursor.fetchone()
+        result = await cursor.fetchone()
         return result[0] if result else None
 
 async def save_route_in_db(dep: str, dest: str, cost: float):

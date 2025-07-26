@@ -1,25 +1,33 @@
-import datetime
-
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
 from aiogram.filters import CommandStart, Command
 
+from bot.config import get_config
 from bot.handlers.states import TicketOrder
 from bot.keyboards.default import get_keyboard_seat_classes, get_keyboard_pay_btn, get_keyboard_quantity_number, \
-    get_keyboard_confirmation
+    get_keyboard_confirmation, general_keyboard_menu
 from bot.services.crypto import create_invoice
 from bot.services.routes import get_route_price
 from bot.storage.db import save_order, get_user_orders
 
 order_router = Router()
 
+config = get_config()
+
 
 @order_router.message(CommandStart())
+async def welcome_massage(message: Message):
+    await message.answer(
+        "👋 Welcome to Ticket Bot!",
+        reply_markup=general_keyboard_menu()
+    )
+
+
+@order_router.message(Command("book"))
 async def cmd_start(message: Message, state: FSMContext):
     await state.set_state(TicketOrder.departure)
     await message.answer(
-        "👋 Welcome to Ticket Bot!\n"
         "What is your depart stop from where you are going travel?",
         reply_markup=ReplyKeyboardRemove()
     )
@@ -68,9 +76,17 @@ async def process_quantity(message: Message, state: FSMContext):
     await state.update_data(quantity=qty)
     data = await state.get_data()
 
-    # Calculate total price
-    unit_price = get_route_price(departure=data["departure"], destination=data["destination"])
-    total = unit_price * qty
+    # Calculate total price and get from DB
+    try:
+        unit_price = await get_route_price(departure=data["departure"], destination=data["destination"])
+        if unit_price is None:
+            raise ValueError
+        total = float(unit_price) * qty
+    except Exception as e:
+        print(e)  # debug
+        await message.answer("❌ We didn't found this route.")
+        return
+
     await state.update_data(price=total)
 
     await message.answer(
@@ -91,7 +107,7 @@ async def process_confirm(callback: CallbackQuery, state: FSMContext):
     if callback.message == "cancel_order":
         await state.clear()
         await callback.message.delete()
-        await callback.message.answer(f"The order dropped!", reply_markup=ReplyKeyboardRemove())
+        await callback.message.answer(f"The order dropped!", reply_markup=general_keyboard_menu())
         return
 
     # Confirm and pay proces of the order
@@ -118,11 +134,10 @@ async def process_confirm(callback: CallbackQuery, state: FSMContext):
         "✅ Booking confirmed. Please proceed to payment:\n\n",
         reply_markup=get_keyboard_pay_btn(invoice=invoice)
     )
-
     await state.clear()
 
 
-@order_router.message(Command("myorders"))
+@order_router.message(Command("my_orders"))
 async def user_order_history(message: Message):
     orders = await get_user_orders(message.from_user.id)
     if not orders:
@@ -141,3 +156,11 @@ async def user_order_history(message: Message):
         )
 
     await message.answer(text)
+
+@order_router.message(Command("help"))
+async def get_help(message: Message):
+    supports = "\n".join(config.supports)
+
+    await message.answer(
+        f"ALl supports here:\n{supports}"
+    )

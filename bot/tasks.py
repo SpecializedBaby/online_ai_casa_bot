@@ -3,6 +3,8 @@ import datetime
 
 from aiogram import Bot
 
+from bot.config import get_config
+from bot.keyboards.default import general_keyboard_menu
 from bot.services.crypto import get_invoice_status
 from bot.storage.db import get_unpaid_orders, mark_order_paid, mark_order_canceled
 
@@ -12,15 +14,18 @@ async def monitor_payments(bot: Bot):
         unpaid_orders = await get_unpaid_orders()
         time_now = datetime.datetime.utcnow()
 
+        # Order monitor
         for order in unpaid_orders:
             status = await get_invoice_status(order["invoice_id"])
 
             if status == "paid":
                 await bot.send_message(
                     order["user_id"],
-                    "✅ Payment received. Your ticket is confirmed!"
+                    "✅ Payment received. Your ticket is confirmed!",
+                    reply_markup=general_keyboard_menu()
                 )
                 await mark_order_paid(order["id"])
+                await admin_notification_paid_order(order=order, bot=bot)
 
                 continue
 
@@ -38,3 +43,18 @@ async def monitor_payments(bot: Bot):
                     pass  # if user force stop the bot
 
         await asyncio.sleep(30)  # check every 30 seconds
+
+config = get_config()
+ADMIN_IDS = config.admin_ids
+
+async def admin_notification_paid_order(order: dict, bot: Bot) -> None:
+    # Admin Notification about new paid order
+    for admin_id in ADMIN_IDS:
+        await bot.send_message(
+            admin_id,
+            f"📬 New PAID order id:{order['id']}!\n\n"
+            f"User: @{order['username']} ({order['user_id']})\n"
+            f"Route: {order['departure']} → {order['destination']}\n"
+            f"Quantity: {order['quantity']}\n"
+            f"Total: {order['price']} USDT"
+        )

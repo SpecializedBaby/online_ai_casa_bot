@@ -8,7 +8,7 @@ from aiogram.types import Message, FSInputFile, Document
 
 from bot.config import get_config
 from bot.services.routes import save_route_in_db
-from bot.storage.db import get_all_orders, get_paid_orders
+from bot.storage.db import get_all_orders, get_paid_orders, mark_ticket_sent, get_user_id_by_order_id
 
 config = get_config()
 
@@ -50,20 +50,28 @@ async def handle_pdf_upload(message: Message, bot: Bot):
     admin_id = message.from_user.id
     if not str(admin_id) in config.admin_ids:
         return  # Not attaching anything
+
+    #  Check if there's a pending upload
+    if admin_id not in pending_ticket_uploads:
+        return await message.answer("⚠️ No pending ticket upload found.")
+
     order_id = pending_ticket_uploads.pop(admin_id)
 
-    # Get order info from DB
-    async with aiosqlite.connect(config.db_path) as db:
-        db.row_factory = aiosqlite.Row
-        cursor = await db.execute("SELECT user_id FROM orders WHERE id = ?", (order_id,))
-        result = await cursor.fetchone()
+    # Get user info from DB
+    user_id = await get_user_id_by_order_id(order_id)
+    if user_id is None:
+        return await message.answer("❌ Order not found.")
 
-    if result:
-        user_id = result["user_id"]
-        await bot.send_document(chat_id=user_id, document=message.document.file_id, caption="🎟 Your ticket PDF is ready!")
-        await message.answer("✅ Ticket sent to user.")
-    else:
-        await message.answer("❌ Order not found.")
+    # Send ticket to user
+    await bot.send_document(
+        chat_id=int(user_id),
+        document=message.document.file_id,
+        caption="🎟 Your ticket PDF is ready!"
+    )
+
+    await message.answer("✅ Ticket sent to user.")
+    # Update DB
+    await mark_ticket_sent(order_id=order_id)
 
 
 @admin_router.message(Command("orders"))
