@@ -23,8 +23,10 @@ async def init_db():
                 seat_type TEXT,
                 quantity INTEGER DEFAULT 1,
                 price REAL,
+                payment_method TEXT DEFAULT 'cryptobot',
                 invoice_id INTEGER,
                 status TEXT DEFAULT 'unpaid',
+                ticket_sent BOOLEAN DEFAULT 0,
                 created_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -88,3 +90,16 @@ async def mark_order_canceled(order_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("UPDATE orders SET status = 'canceled' WHERE id = ?", (order_id,))
         await db.commit()
+
+async def mark_ticket_sent(order_id: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE orders SET ticket_sent = 1 WHERE id = ?", (order_id,))
+        await db.commit()
+
+
+async def get_user_id_by_order_id(order_id) -> int:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("SELECT user_id FROM orders WHERE id = ?", (order_id,))
+        row = await cursor.fetchone()
+        return row["user_id"] if row else None
