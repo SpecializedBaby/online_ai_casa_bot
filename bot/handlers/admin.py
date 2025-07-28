@@ -8,13 +8,41 @@ from aiogram.types import Message, FSInputFile, Document
 
 from bot.config import get_config
 from bot.services.routes import save_route_in_db
-from bot.storage.db import get_all_orders, get_paid_orders, mark_ticket_sent, get_user_id_by_order_id
+from bot.storage.db import get_all_orders, get_paid_orders, mark_ticket_sent, get_user_id_by_order_id, mark_order_paid, \
+    mark_order_canceled
 
 config = get_config()
 
 admin_router = Router()
 
 pending_ticket_uploads = {}  # key: admin_id, value: order_id
+
+# For manual manager status of order
+@admin_router.message(Command("mark_paid"))
+async def set_paid_manual_order(message: Message):
+    if not str(message.from_user.id) in config.admin_ids:
+        await message.answer("❌ Unauthorized.")
+        return
+
+    try:
+        order_id = int(message.text.split()[1])
+        await mark_order_paid(order_id)
+        await message.answer(f"Order {order_id} has paid!")
+    except:
+        await message.answer("❗ Usage: /mark_paid <order_id>")
+
+
+@admin_router.message(Command("cancel_order"))
+async def set_canceled_unpaid_order(message: Message):
+    if not str(message.from_user.id) in config.admin_ids:
+        await message.answer("❌ Unauthorized.")
+        return
+    try:
+        order_id = int(message.text.split()[1])
+        await mark_order_canceled(order_id)
+        await message.answer(f"Order {order_id} has canceled!")
+    except:
+        await message.answer("❗ Usage: /cancel_order <order_id>")
 
 
 @admin_router.message(Command("add_route"))

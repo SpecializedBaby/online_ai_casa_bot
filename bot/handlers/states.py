@@ -8,3 +8,4 @@ class TicketOrder(StatesGroup):
     seat_type = State()
     quantity = State()
     confirm = State()
+    payment = State()

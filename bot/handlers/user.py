@@ -1,3 +1,5 @@
+import random
+
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
@@ -6,7 +8,7 @@ from aiogram.filters import CommandStart, Command
 from bot.config import get_config
 from bot.handlers.states import TicketOrder
 from bot.keyboards.default import get_keyboard_seat_classes, get_keyboard_pay_btn, get_keyboard_quantity_number, \
-    get_keyboard_confirmation, general_keyboard_menu
+    get_keyboard_confirmation, general_keyboard_menu, get_keyboard_payment_method
 from bot.services.crypto import create_invoice
 from bot.services.routes import get_route_price
 from bot.storage.db import save_order, get_user_orders
@@ -110,30 +112,59 @@ async def process_confirm(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer(f"The order dropped!", reply_markup=general_keyboard_menu())
         return
 
-    # Confirm and pay proces of the order
-    # Create invoice
-    data = await state.get_data()
-    amount = data["price"]
-    invoice = await create_invoice(amount=amount)
-
-    #  save and commit the order to DB
-    await save_order({
-        "user_id": callback.from_user.id,
-        "username": callback.from_user.username,
-        "departure": data["departure"],
-        "destination": data["destination"],
-        "travel_date": data["travel_date"],
-        "seat_type": data["seat_type"],
-        "quantity": data["quantity"],
-        "price": data["price"],
-        "invoice_id": invoice.invoice_id,
-    })
-
-    # Pay process
+    # Confirmed order and got to payment process
     await callback.message.answer(
         "✅ Booking confirmed. Please proceed to payment:\n\n",
-        reply_markup=get_keyboard_pay_btn(invoice=invoice)
+        reply_markup=get_keyboard_payment_method()
     )
+    await state.set_state(TicketOrder.payment)
+
+
+@order_router.callback_query(lambda c: c.data.startswith("pay_"))
+async def process_payment(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    amount = data["price"]
+
+    if callback.message == "pay_manual":
+        await callback.message.delete()
+        await save_order({
+            "user_id": callback.from_user.id,
+            "username": callback.from_user.username,
+            "departure": data["departure"],
+            "destination": data["destination"],
+            "travel_date": data["travel_date"],
+            "seat_type": data["seat_type"],
+            "quantity": data["quantity"],
+            "price": data["price"],
+            "payment_method": data["payment"],
+            "invoice_id": random.randint(a=1, b=999999),
+        })
+        await callback.message.answer(f"Wait for support answer!", reply_markup=general_keyboard_menu())
+
+    elif callback.message == "pay_cryptobot":
+        # Create invoice via cryptobot
+        invoice = await create_invoice(amount=amount)
+
+        #  save and commit the order to DB
+        await save_order({
+            "user_id": callback.from_user.id,
+            "username": callback.from_user.username,
+            "departure": data["departure"],
+            "destination": data["destination"],
+            "travel_date": data["travel_date"],
+            "seat_type": data["seat_type"],
+            "quantity": data["quantity"],
+            "price": data["price"],
+            "payment_method": data["payment"],
+            "invoice_id": invoice.invoice_id,
+        })
+
+        # Pay process
+        await callback.message.answer(
+            "✅ Booking confirmed. Please proceed to payment:\n\n",
+            reply_markup=get_keyboard_pay_btn(invoice=invoice)
+        )
+
     await state.clear()
 
 
