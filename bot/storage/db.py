@@ -9,8 +9,8 @@ config = get_config()
 DB_PATH = config.db_path
 
 
-async def init_db():
-    async with aiosqlite.connect(DB_PATH) as db:
+async def init_db(db_path=DB_PATH):
+    async with aiosqlite.connect(db_path) as db:
         # create orders table
         await db.execute("""
             CREATE TABLE IF NOT EXISTS orders (
@@ -42,8 +42,8 @@ async def init_db():
         """)
         await db.commit()
 
-async def save_order(data: Dict):
-    async with aiosqlite.connect(DB_PATH) as db:
+async def save_order(data: Dict, db_path=DB_PATH):
+    async with aiosqlite.connect(db_path) as db:
         await db.execute("""
             INSERT INTO orders (user_id, username, departure, destination, travel_date, seat_type, quantity, price, invoice_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -55,50 +55,57 @@ async def save_order(data: Dict):
         ))
         await db.commit()
 
-async def get_unpaid_orders() -> List[Dict]:
-    async with aiosqlite.connect(DB_PATH) as db:
+async def get_order_by_id(order_id: int, db_path=DB_PATH):
+    async with aiosqlite.connect(db_path) as db:
         db.row_factory = aiosqlite.Row
-        cursor = await db.execute("SELECT * FROM orders WHERE status = 'unpaid'")
-        return await cursor.fetchall()
+        cursor = await db.execute("SELECT * FROM orders WHERE id = ?", (order_id, ))
+        return await cursor.fetchone()
 
-async def mark_order_paid(order_id: int):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("UPDATE orders SET status = 'paid' WHERE id = ?", (order_id,))
-        await db.commit()
 
-async def get_all_orders() -> List[Dict]:
-    async with aiosqlite.connect(DB_PATH) as db:
+async def get_all_orders(db_path=DB_PATH) -> List[Dict]:
+    async with aiosqlite.connect(db_path) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute("SELECT * FROM orders ORDER BY id DESC")
         return await cursor.fetchall()
 
-async def get_user_orders(user_id: int) -> List[Dict]:
-    async with aiosqlite.connect(DB_PATH) as db:
+async def get_unpaid_orders(db_path=DB_PATH) -> List[Dict]:
+    async with aiosqlite.connect(db_path) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("SELECT * FROM orders WHERE status = 'unpaid'")
+        return await cursor.fetchall()
+
+async def mark_order_paid(order_id: int, db_path=DB_PATH):
+    async with aiosqlite.connect(db_path) as db:
+        await db.execute("UPDATE orders SET status = 'paid' WHERE id = ?", (order_id,))
+        await db.commit()
+
+async def get_user_orders(user_id: int, db_path=DB_PATH) -> List[Dict]:
+    async with aiosqlite.connect(db_path) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute(
             "SELECT * FROM orders WHERE user_id = ? AND status = 'paid' ORDER BY id DESC",
             (user_id,))
         return await cursor.fetchall()
 
-async def get_paid_orders() -> List[Dict]:
-    async with aiosqlite.connect(DB_PATH) as db:
+async def get_paid_orders(db_path=DB_PATH) -> List[Dict]:
+    async with aiosqlite.connect(db_path) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute("SELECT * FROM orders WHERE status = 'paid'")
         return await cursor.fetchall()
 
-async def mark_order_canceled(order_id: int):
-    async with aiosqlite.connect(DB_PATH) as db:
+async def mark_order_canceled(order_id: int, db_path=DB_PATH):
+    async with aiosqlite.connect(db_path) as db:
         await db.execute("UPDATE orders SET status = 'canceled' WHERE id = ?", (order_id,))
         await db.commit()
 
-async def mark_ticket_sent(order_id: int):
-    async with aiosqlite.connect(DB_PATH) as db:
+async def mark_ticket_sent(order_id: int, db_path=DB_PATH):
+    async with aiosqlite.connect(db_path) as db:
         await db.execute("UPDATE orders SET ticket_sent = 1 WHERE id = ?", (order_id,))
         await db.commit()
 
 
-async def get_user_id_by_order_id(order_id) -> int:
-    async with aiosqlite.connect(DB_PATH) as db:
+async def get_user_id_by_order_id(order_id, db_path=DB_PATH) -> int:
+    async with aiosqlite.connect(db_path) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute("SELECT user_id FROM orders WHERE id = ?", (order_id,))
         row = await cursor.fetchone()
