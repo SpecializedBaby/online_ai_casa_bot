@@ -19,7 +19,7 @@ config = get_config()
 
 
 @order_router.message(CommandStart())
-async def welcome_massage(message: Message):
+async def welcome_massage(message: Message, state: FSMContext) -> None:
     await message.answer(
         "👋 Welcome to Ticket Bot!",
         reply_markup=general_keyboard_menu()
@@ -31,7 +31,7 @@ async def cmd_start(message: Message, state: FSMContext):
     await state.set_state(TicketOrder.departure)
     await message.answer(
         "What is your depart stop from where you are going travel?",
-        reply_markup=ReplyKeyboardRemove()
+        reply_markup=general_keyboard_menu()
     )
 
 @order_router.message(TicketOrder.departure)
@@ -54,25 +54,26 @@ async def process_travel_date(message: Message, state: FSMContext):
         "💺 Choose seat type:",
         reply_markup=get_keyboard_seat_classes())
 
-@order_router.message(TicketOrder.seat_type)
-async def process_seat_type(message: Message, state: FSMContext):
-    await state.update_data(seat_type=message.text)
+@order_router.callback_query(TicketOrder.seat_type)
+async def process_seat_type(callback: CallbackQuery, state: FSMContext):
+    await state.update_data(seat_type=callback.data)
     await state.set_state(TicketOrder.quantity)
 
-    await message.answer(
+    await callback.message.answer(
         "👥 How many tickets would you like to book?",
         reply_markup=get_keyboard_quantity_number()
     )
 
-@order_router.message(TicketOrder.quantity)
-async def process_quantity(message: Message, state: FSMContext):
+@order_router.callback_query(TicketOrder.quantity)
+async def process_quantity(callback: CallbackQuery, state: FSMContext):
     try:
-        qty = int(message.text)
+        qty = int(callback.data)
         if qty < 1 or qty > 10:
             raise ValueError
     except Exception as e:
         print(e)  # debug
-        await message.answer("❌ Enter a number between 1 and 10.")
+
+        await callback.message.answer("❌ Enter a number between 1 and 10.")
         return
 
     await state.update_data(quantity=qty)
@@ -86,12 +87,12 @@ async def process_quantity(message: Message, state: FSMContext):
         total = float(unit_price) * qty
     except Exception as e:
         print(e)  # debug
-        await message.answer("❌ We didn't found this route.")
+        await callback.message.answer("❌ We didn't found this route.")
         return
 
     await state.update_data(price=total)
 
-    await message.answer(
+    await callback.message.answer(
         f"Please confirm your booking:\n\n"
         f"🛤 Route: {data['departure']} → {data['destination']}\n"
         f"📅 Date: {data['travel_date']}\n"

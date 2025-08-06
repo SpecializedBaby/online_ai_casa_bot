@@ -4,18 +4,21 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardBut
 
 def general_keyboard_menu() -> ReplyKeyboardMarkup:
     keyboard = [
-        [KeyboardButton(text="/book")],
+        [KeyboardButton(text="/start"), KeyboardButton(text="/book")],
         [KeyboardButton(text="/my_orders"), KeyboardButton(text="/help")]
     ]
-    return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
+    return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True, is_persistent=True)
 
 
-def get_keyboard_seat_classes() -> ReplyKeyboardMarkup:
+def get_keyboard_seat_classes() -> InlineKeyboardMarkup:
     keyboard = [
-        [KeyboardButton(text="Standard"), KeyboardButton(text="Business")],
-        [KeyboardButton(text="Sleeper")],
+        [
+            InlineKeyboardButton(text="Standard", callback_data="standard"),
+            InlineKeyboardButton(text="Business", callback_data="business"),
+            InlineKeyboardButton(text="Sleeper", callback_data="sleeper"),
+        ]
     ]
-    return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_keyboard_pay_btn(invoice: Invoice) -> InlineKeyboardMarkup:
@@ -26,14 +29,22 @@ def get_keyboard_pay_btn(invoice: Invoice) -> InlineKeyboardMarkup:
     return inline_keyboard
 
 
-def get_keyboard_quantity_number() -> ReplyKeyboardMarkup:
+def get_keyboard_quantity_number() -> InlineKeyboardMarkup:
     keyboard = [
-        [KeyboardButton(text="1"), KeyboardButton(text="2")], [KeyboardButton(text="3")],
-        [KeyboardButton(text="4"), KeyboardButton(text="5")], [KeyboardButton(text="6")],
-        [KeyboardButton(text="7"), KeyboardButton(text="8")], [KeyboardButton(text="9")],
-        [KeyboardButton(text="10"), KeyboardButton(text="11")], [KeyboardButton(text="12")],
+        [
+            InlineKeyboardButton(text="1", callback_data="1"),
+            InlineKeyboardButton(text="2", callback_data="2"),
+            InlineKeyboardButton(text="3", callback_data="3"),
+            InlineKeyboardButton(text="4", callback_data="4"),
+            InlineKeyboardButton(text="5", callback_data="5"),
+            InlineKeyboardButton(text="6", callback_data="6"),
+            InlineKeyboardButton(text="7", callback_data="7"),
+            InlineKeyboardButton(text="8", callback_data="8"),
+            InlineKeyboardButton(text="9", callback_data="9"),
+            InlineKeyboardButton(text="10", callback_data="10"),
+        ]
     ]
-    return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_keyboard_confirmation() -> InlineKeyboardMarkup:
