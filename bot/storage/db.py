@@ -110,3 +110,31 @@ async def get_user_id_by_order_id(order_id, db_path=DB_PATH) -> int:
         cursor = await db.execute("SELECT user_id FROM orders WHERE id = ?", (order_id,))
         row = await cursor.fetchone()
         return row["user_id"] if row else None
+
+async def get_last_order_by_user_id(user_id: int, db_path=DB_PATH) -> dict:
+    async with aiosqlite.connect(db_path) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            """
+            SELECT * FROM orders
+            WHERE user_id = ?
+            ORDER BY created_time DESC
+            LIMIT 1
+            """, (user_id, )
+        )
+        row = await cursor.fetchone()
+        return dict(row) if row else None
+
+async def update_order_data(order_id: int, db_path=DB_PATH, **fields):
+    if not fields:
+        raise ValueError("No data to update.")
+
+    set_clause = ", ".join(f"{key} = ?" for key in fields.keys())
+    values = list(fields.values()) + [order_id]
+
+    async with aiosqlite.connect(db_path) as db:
+        await db.execute(
+            f"UPDATE orders SET {set_clause} WHERE id = ?",
+            values
+        )
+        await db.commit()
