@@ -27,6 +27,7 @@ async def init_db(db_path=DB_PATH):
                 invoice_id INTEGER,
                 status TEXT DEFAULT 'unpaid',
                 ticket_sent BOOLEAN DEFAULT 0,
+                notified BOOLEAN DEFAULT 0,
                 created_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -98,7 +99,7 @@ async def mark_order_canceled(order_id: int, db_path=DB_PATH):
         await db.execute("UPDATE orders SET status = 'canceled' WHERE id = ?", (order_id,))
         await db.commit()
 
-async def mark_ticket_sent(order_id: int, db_path=DB_PATH):
+async def mark_ticket_sent(order_id: int, db_path=DB_PATH) -> None:
     async with aiosqlite.connect(db_path) as db:
         await db.execute("UPDATE orders SET ticket_sent = 1 WHERE id = ?", (order_id,))
         await db.commit()
@@ -137,4 +138,9 @@ async def update_order_data(order_id: int, db_path=DB_PATH, **fields):
             f"UPDATE orders SET {set_clause} WHERE id = ?",
             values
         )
+        await db.commit()
+
+async def mark_notified_admin(order_id: int, db_path=DB_PATH) -> None:
+    async with aiosqlite.connect(db_path) as db:
+        await db.execute("UPDATE orders SET notified = 1 WHERE id = ?", (order_id,))
         await db.commit()

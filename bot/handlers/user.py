@@ -42,18 +42,16 @@ async def process_confirm(callback: CallbackQuery):
         await update_order_data(order_id=last_order["id"], status="cancelled")
         return
 
-        # Confirmed
-    if last_order["price"] is None:
-        # This was a manual request
-        await callback.message.edit_text("✅ Your request has been confirmed and sent to support.")
-        await update_order_data(order_id=last_order["id"], status="manual_confirmed")
-    else:
+    # Confirmed
+    elif decision == "confirm_order":
         # Get the payment methods
         await callback.message.delete()
         await callback.message.answer(
             "💳 Choose your payment method:",
             reply_markup=get_keyboard_payment_method()
         )
+
+    await callback.answer("Make your choose or call support!")
 
 
 @order_router.callback_query(lambda c: c.data.startswith("pay_"))
@@ -68,13 +66,14 @@ async def process_payment(callback: CallbackQuery):
 
     await callback.message.delete()
 
-    if callback.message == "pay_manual":
+    if callback.data== "pay_manual":
         await callback.message.answer(f"Wait for support answer!", reply_markup=general_keyboard_menu())
 
-    elif callback.message == "pay_cryptobot":
+    elif callback.data == "pay_cryptobot":
         # Create invoice via cryptobot
         amount = float(last_order["price"])
-        invoice = await create_invoice(amount=last_order["price"])
+        invoice = await create_invoice(amount=amount)
+        await update_order_data(order_id=last_order["id"], invoice_id=invoice.invoice_id)
 
         # Pay process
         await callback.message.answer(

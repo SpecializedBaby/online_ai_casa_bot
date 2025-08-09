@@ -6,8 +6,7 @@ from aiogram import Bot
 from bot.config import get_config
 from bot.keyboards.default import general_keyboard_menu
 from bot.services.crypto import get_invoice_status
-from bot.storage.db import get_unpaid_orders, mark_order_paid, mark_order_canceled
-
+from bot.storage.db import get_unpaid_orders, mark_order_paid, mark_order_canceled, mark_notified_admin
 
 config = get_config()
 ADMIN_IDS = config.admin_ids
@@ -19,17 +18,23 @@ async def monitor_payments(bot: Bot):
 
         # Order monitor
         for order in unpaid_orders:
-            if order["payment_method"] == "cryptobot":
+            if order["payment_method"] == "pay_cryptobot":
                 status = await get_invoice_status(order["invoice_id"])
 
                 if status == "paid":
                     await user_notification_paid_order(user_id=order["user_id"], bot=bot)
                     await mark_order_paid(order["id"])
                     await admin_notification_paid_order(order=order, bot=bot)
+                    await mark_notified_admin(order["id"])
                     continue
 
-            elif order["payment_method"] == "pay_manual" and order["status"] == "unpaid":
+            elif order["payment_method"] == "pay_manual" and not order["notified"]:
                 await admin_notification_manual_order(order=order, bot=bot)
+                await mark_notified_admin(order["id"])
+            # Order what didnt found route
+            elif not order["notified"] and order["price"] is None:
+                await admin_notification_not_route(order=order, bot=bot)
+                await mark_notified_admin(order["id"])
 
             # Check expiration
             created_time = datetime.datetime.strptime(order["created_time"], "%Y-%m-%d %H:%M:%S")
@@ -80,4 +85,19 @@ async def admin_notification_manual_order(order: dict, bot: Bot) -> None:
                 f"🕐 Date: {order['travel_date']}\n"
                 f"🪑 Seat: {order['seat_type']}\n\n"
                 f"📌 Order ID: {order['id']}"
+        )
+
+
+async def admin_notification_not_route(order: dict, bot: Bot) -> None:
+    # Admin Notification about new order with manual payment
+    for admin_id in ADMIN_IDS:
+        await bot.send_message(
+            admin_id,
+            "📥 New NOT FOUND route order:\n\n"
+            f"👤 @{order['username']} ({order['user_id']})\n"
+            f"🛤 {order['departure']} → {order['destination']}\n"
+            f"👥 Quantity: {order['quantity']}\n"
+            f"🕐 Date: {order['travel_date']}\n"
+            f"🪑 Seat: {order['seat_type']}\n\n"
+            f"📌 Order ID: {order['id']}"
         )

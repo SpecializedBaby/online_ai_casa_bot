@@ -119,7 +119,7 @@ async def process_quantity(callback: CallbackQuery, state: FSMContext):
             "seat_type": data["seat_type"],
             "quantity": qty,
             "price": None,
-            "payment_method": "pay_manual",
+            "payment_method": None,
             "invoice_id": None,
             "status": "unpaid"
         })
