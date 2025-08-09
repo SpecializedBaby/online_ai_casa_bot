@@ -74,4 +74,4 @@ def get_keyboard_payment_method() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="💸 CryptoBot", callback_data="pay_cryptobot")],
         [InlineKeyboardButton(text="💵 Manual", callback_data="pay_manual")]
     ]
-    return InlineKeyboardMarkup(keyboard=keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)

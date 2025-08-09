@@ -6,7 +6,6 @@ from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
 from aiogram.filters import CommandStart, Command
 
 from bot.config import get_config
-from bot.handlers.states import TicketOrder
 from bot.keyboards.default import get_keyboard_seat_classes, get_keyboard_pay_btn, get_keyboard_quantity_number, \
     get_keyboard_confirmation, general_keyboard_menu, get_keyboard_payment_method
 from bot.services.crypto import create_invoice
@@ -39,8 +38,8 @@ async def process_confirm(callback: CallbackQuery):
     # Cancel query process
     if decision == "cancel_order":
         await callback.message.delete()
+        await callback.message.answer("❌ Order has been cancelled.", reply_markup=general_keyboard_menu())
         await update_order_data(order_id=last_order["id"], status="cancelled")
-        await callback.message.edit_text("❌ Order has been cancelled.", reply_markup=general_keyboard_menu())
         return
 
         # Confirmed
@@ -50,7 +49,8 @@ async def process_confirm(callback: CallbackQuery):
         await update_order_data(order_id=last_order["id"], status="manual_confirmed")
     else:
         # Get the payment methods
-        await callback.message.edit_text(
+        await callback.message.delete()
+        await callback.message.answer(
             "💳 Choose your payment method:",
             reply_markup=get_keyboard_payment_method()
         )

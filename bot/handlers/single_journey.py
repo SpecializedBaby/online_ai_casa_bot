@@ -96,7 +96,7 @@ async def process_quantity(callback: CallbackQuery, state: FSMContext):
             "price": total,
             "payment_method": None,  # Set later via confirm step
             "invoice_id": None,
-            "status": "waiting_confirm"  # Track status
+            "status": "confirming"  # Track status
         })
         await callback.message.answer(
             f"Please confirm your booking:\n\n"
@@ -121,7 +121,7 @@ async def process_quantity(callback: CallbackQuery, state: FSMContext):
             "price": None,
             "payment_method": "pay_manual",
             "invoice_id": None,
-            "status": "manual_pending"
+            "status": "unpaid"
         })
 
         await callback.message.answer(

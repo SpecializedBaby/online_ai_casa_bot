@@ -23,7 +23,7 @@ async def init_db(db_path=DB_PATH):
                 seat_type TEXT,
                 quantity INTEGER DEFAULT 1,
                 price REAL,
-                payment_method TEXT DEFAULT 'cryptobot',
+                payment_method TEXT,
                 invoice_id INTEGER,
                 status TEXT DEFAULT 'unpaid',
                 ticket_sent BOOLEAN DEFAULT 0,
