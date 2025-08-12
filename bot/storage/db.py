@@ -3,6 +3,11 @@ from typing import List, Dict
 
 
 from bot.config import get_config
+from bot.storage.notifications import create_table_notification
+from bot.storage.order import create_table_orders
+from bot.storage.payment import create_table_payment
+from bot.storage.routes import create_table_routes
+from bot.storage.users import create_user_table
 
 config = get_config()
 
@@ -11,50 +16,14 @@ DB_PATH = config.db_path
 
 async def init_db(db_path=DB_PATH):
     async with aiosqlite.connect(db_path) as db:
-        # create orders table
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS orders (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                username TEXT,
-                departure TEXT,
-                destination TEXT,
-                travel_date TEXT,
-                seat_type TEXT,
-                quantity INTEGER DEFAULT 1,
-                price REAL,
-                payment_method TEXT,
-                invoice_id INTEGER,
-                status TEXT DEFAULT 'unpaid',
-                ticket_sent BOOLEAN DEFAULT 0,
-                notified BOOLEAN DEFAULT 0,
-                created_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+        await create_user_table(db=db)
+        await create_table_routes(db=db)
+        await create_table_notification(db=db)
+        await create_table_payment(db=db)
+        await create_table_orders(db=db)
 
-        # create routes table
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS routes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                departure TEXT,
-                destination TEXT,
-                cost REAL
-            )
-        """)
         await db.commit()
 
-async def save_order(data: Dict, db_path=DB_PATH):
-    async with aiosqlite.connect(db_path) as db:
-        await db.execute("""
-            INSERT INTO orders (user_id, username, departure, destination, travel_date, seat_type, quantity, price, invoice_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            data["user_id"], data["username"], data["departure"],
-            data["destination"], data["travel_date"],
-            data["seat_type"], data["quantity"], data["price"],
-            data["invoice_id"],
-        ))
-        await db.commit()
 
 async def get_order_by_id(order_id: int, db_path=DB_PATH):
     async with aiosqlite.connect(db_path) as db:
@@ -140,7 +109,4 @@ async def update_order_data(order_id: int, db_path=DB_PATH, **fields):
         )
         await db.commit()
 
-async def mark_notified_admin(order_id: int, db_path=DB_PATH) -> None:
-    async with aiosqlite.connect(db_path) as db:
-        await db.execute("UPDATE orders SET notified = 1 WHERE id = ?", (order_id,))
-        await db.commit()
+

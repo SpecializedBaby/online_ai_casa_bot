@@ -7,7 +7,7 @@ from bot.config import get_config
 from bot.handlers.states import JourneyOrder
 from bot.keyboards.default import get_keyboard_seat_classes, get_keyboard_quantity_number, general_keyboard_menu, \
     get_keyboard_confirmation
-from bot.services.routes import get_route_price
+from bot.storage.routes import get_route_price
 from bot.storage.db import save_order
 
 journey_router = Router()
