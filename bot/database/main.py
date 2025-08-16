@@ -24,7 +24,7 @@ class Base(AsyncAttrs, DeclarativeBase):
         onupdate=func.now()
     )
 
-    def to_dict(self, exclude_none: bool = False):
+    def to_dict(self, exclude_none: bool = False) -> dict:
         """
         Converts the object of the model into a dictionary.
 

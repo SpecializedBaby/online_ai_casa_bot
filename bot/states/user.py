@@ -1,7 +1,7 @@
 from aiogram.fsm.state import StatesGroup, State
 
 
-class JourneyOrder(StatesGroup):
+class JourneyBooking(StatesGroup):
     departure = State()
     destination = State()
     travel_date = State()

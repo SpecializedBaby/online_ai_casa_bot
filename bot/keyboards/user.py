@@ -7,8 +7,8 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardBut
 def general_keyboard_menu() -> ReplyKeyboardMarkup:
     keyboard = [
         [KeyboardButton(text="/db_pass")],
-        [KeyboardButton(text="/start"), KeyboardButton(text="/book")],
-        [KeyboardButton(text="/my_orders"), KeyboardButton(text="/help")]
+        [KeyboardButton(text="/start"), KeyboardButton(text="/booking")],
+        [KeyboardButton(text="/my_bookings"), KeyboardButton(text="/help")]
     ]
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True, is_persistent=True)
 

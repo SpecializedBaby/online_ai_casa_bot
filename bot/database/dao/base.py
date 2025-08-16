@@ -50,18 +50,22 @@ class BaseDAO(Generic[T]):
             logger.error(f"Error with filters {filter_dict}: {e}")
             raise
 
-    async def find_all(self, filters: BaseModel) -> List[T]:
-        # Get all data
-        filter_dict = filters.model_dump(exclude_unset=True)
-        logger.info(f"Search all rows {self.model.__name__} by filters: {filter_dict}")
+    async def find_all(self, filters: BaseModel | None = None) -> List[T]:
         try:
-            query = select(self.model).filter_by(**filter_dict)
+            if filters:
+                filter_dict = filters.model_dump(exclude_unset=True)
+                logger.info(f"Search all rows {self.model.__name__} by filters: {filter_dict}")
+                query = select(self.model).filter_by(**filter_dict)
+            else:
+                logger.info(f"Search all rows {self.model.__name__} without filters")
+                query = select(self.model)
+
             result = await self._session.execute(query)
             records = result.scalars().all()
             logger.info(f"Found {len(records)}.")
             return records
         except SQLAlchemyError as e:
-            logger.error(f"Ошибка при поиске всех записей по фильтрам {filter_dict}: {e}")
+            logger.error(f"Error in find_all method: {e}")
             raise
 
     async def add(self, data: BaseModel) -> Optional[T]:
