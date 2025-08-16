@@ -1,6 +1,6 @@
 import pytest
 
-from bot.storage.db import get_unpaid_orders, mark_order_paid, get_order_by_id, get_paid_orders, mark_ticket_sent, \
+from bot.database.db import get_unpaid_orders, mark_order_paid, get_order_by_id, get_paid_orders, mark_ticket_sent, \
     get_all_orders, get_user_id_by_order_id
 
 

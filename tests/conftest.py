@@ -4,7 +4,7 @@ import asyncio
 
 import pytest_asyncio
 
-from bot.storage.db import init_db, save_order
+from bot.database.db import init_db, save_order
 
 TEST_DB_PATH = "test_orders.db"
 

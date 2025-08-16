@@ -6,7 +6,7 @@ from aiogram import Bot
 from bot.config import get_config
 from bot.keyboards.default import general_keyboard_menu
 from bot.services.crypto import get_invoice_status
-from bot.storage.db import get_unpaid_orders, mark_order_paid, mark_order_canceled, mark_notified_admin
+from bot.database.db import get_unpaid_orders, mark_order_paid, mark_order_canceled, mark_notified_admin
 
 config = get_config()
 ADMIN_IDS = config.admin_ids

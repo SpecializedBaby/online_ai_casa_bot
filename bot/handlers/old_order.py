@@ -4,7 +4,7 @@ from aiogram.types import CallbackQuery, Message
 
 from bot.keyboards.default import general_keyboard_menu, get_keyboard_payment_method, get_keyboard_pay_btn
 from bot.services.crypto import create_invoice
-from bot.storage.db import get_last_order_by_user_id, update_order_data, get_user_orders
+from bot.database.db import get_last_order_by_user_id, update_order_data, get_user_orders
 
 order_router = Router()
 

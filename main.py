@@ -2,38 +2,38 @@ import asyncio
 
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.utils.callback_answer import CallbackAnswerMiddleware
 
-from bot.config import get_config
-from bot.handlers import user, admin, single_journey, order
+from bot.config import config
+from bot.database.main import async_session_maker
+from bot.handlers import user, admin, other
+from bot.middlewares.db import DbSessionMiddleware
 from bot.middlewares.state_clear import StateClearMiddleware
-from bot.storage.db import init_db
-from bot.tasks import monitor_payments
+
+# from bot.tasks import monitor_payments
 
 
 async def main():
-    # init database orders.db
-    await init_db()
-
     # Setup bot
-    config = get_config()
     bot = Bot(token=config.bot_token)
     dp = Dispatcher(storage=MemoryStorage())
 
-    # Routes
-    dp.include_router(order.order_router)
-    dp.include_router(single_journey.journey_router)
-    dp.include_router(user.user_router)
-    dp.include_router(admin.admin_router)
-
     # Middlewares
+    dp.update.middleware(DbSessionMiddleware(session_pool=async_session_maker))
+    # Automatically reply to all callbacks
+    dp.callback_query.middleware(CallbackAnswerMiddleware())
     dp.message.middleware(StateClearMiddleware())
 
-    print("Bot is starting... !")
+    # Routes
+    dp.include_router(user.user_router)
+    dp.include_router(admin.admin_router)
+    dp.include_router(other.other_router)
+
     print("https://t.me/online_ai_casa_bot")
 
     # Tasker
-    asyncio.create_task(monitor_payments(bot))
-    await dp.start_polling(bot)
+    # asyncio.create_task(monitor_payments(bot))
+    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 
 
 if __name__ == "__main__":
