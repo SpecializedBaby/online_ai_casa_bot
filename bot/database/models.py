@@ -24,7 +24,7 @@ class Route(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     departure: Mapped[str]
     destination: Mapped[str]
-    cost: Mapped[str | None]
+    cost: Mapped[float | None]
     bookings: Mapped[list["Booking"]] = relationship("Booking", back_populates="route")
 
 

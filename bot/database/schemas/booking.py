@@ -2,7 +2,7 @@ from datetime import date
 from pydantic import BaseModel, EmailStr
 
 
-class UserTGID(BaseModel):
+class BookingBase(BaseModel):
     id: int
 
     class Config:
@@ -15,3 +15,8 @@ class BookingByStatus(BaseModel):
 
 class BookingsByUser(BookingByStatus):
     user_id: int | None
+
+
+class BookingUpdate(BookingBase, BookingByStatus):
+    pass
+

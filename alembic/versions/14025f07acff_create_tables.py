@@ -34,7 +34,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('departure', sa.String(), nullable=False),
     sa.Column('destination', sa.String(), nullable=False),
-    sa.Column('cost', sa.String(), nullable=True),
+    sa.Column('cost', sa.REAL(), nullable=True),
     sa.Column('created_at', sa.TIMESTAMP(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('updated_at', sa.TIMESTAMP(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.PrimaryKeyConstraint('id')
