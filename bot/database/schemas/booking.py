@@ -20,3 +20,17 @@ class BookingsByUser(BookingByStatus):
 class BookingUpdate(BookingBase, BookingByStatus):
     pass
 
+
+class CreateBooking(BookingUpdate):
+    user_id: int
+    route_id: int | None
+    payment_id: int | None
+    date: str
+    seat_type: str
+    quantity: int
+    price: float | None
+    status: str
+
+
+class SetPayment(BookingByStatus):
+    payment_id: int

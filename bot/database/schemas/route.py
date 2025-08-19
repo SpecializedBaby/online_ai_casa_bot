@@ -9,7 +9,10 @@ class RouteBase(BaseModel):
         from_attributes = True
 
 
-class RouteCreate(BaseModel):
+class GetRoute(BaseModel):
     departure: str
     destination: str
+
+
+class RouteCreate(GetRoute):
     cost: float

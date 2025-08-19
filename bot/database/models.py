@@ -32,10 +32,9 @@ class Payment(Base):
     __tablename__ = "payments"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    test: Mapped[str]
     payment_method: Mapped[str]
     invoice_id: Mapped[int | None]
-    bookings: Mapped[list["Booking"]] = relationship("Booking", back_populates="payment")
+    booking: Mapped["Booking"] = relationship("Booking", back_populates="payment")
 
 
 class Booking(Base):
@@ -52,4 +51,4 @@ class Booking(Base):
     status: Mapped[str] = mapped_column(String, default="unpaid")
     user: Mapped["User"] = relationship("User", back_populates="bookings")
     route: Mapped["Route"] = relationship("Route", back_populates="bookings")
-    payment: Mapped["Payment"] = relationship("Payment", back_populates="bookings")
+    payment: Mapped["Payment"] = relationship("Payment", back_populates="booking")

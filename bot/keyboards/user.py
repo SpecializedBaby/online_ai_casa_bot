@@ -45,26 +45,15 @@ def get_keyboard_pay_btn(invoice: Invoice) -> InlineKeyboardMarkup:
 
 def get_keyboard_quantity_number() -> InlineKeyboardMarkup:
     keyboard = [
-        [
-            InlineKeyboardButton(text="1", callback_data="1"),
-            InlineKeyboardButton(text="2", callback_data="2"),
-            InlineKeyboardButton(text="3", callback_data="3"),
-            InlineKeyboardButton(text="4", callback_data="4"),
-            InlineKeyboardButton(text="5", callback_data="5"),
-            InlineKeyboardButton(text="6", callback_data="6"),
-            InlineKeyboardButton(text="7", callback_data="7"),
-            InlineKeyboardButton(text="8", callback_data="8"),
-            InlineKeyboardButton(text="9", callback_data="9"),
-            InlineKeyboardButton(text="10", callback_data="10"),
-        ]
+        [InlineKeyboardButton(text=str(i), callback_data=str(i)) for i in range(1, 11)]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_keyboard_confirmation() -> InlineKeyboardMarkup:
     confirm_kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ Confirm", callback_data="confirm_order")],
-        [InlineKeyboardButton(text="❌ Cancel", callback_data="cancel_order")]
+        [InlineKeyboardButton(text="✅ Confirm", callback_data="confirm_booking")],
+        [InlineKeyboardButton(text="❌ Cancel", callback_data="cancel_booking")]
     ])
     return confirm_kb
 

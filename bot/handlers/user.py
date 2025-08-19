@@ -80,3 +80,6 @@ async def user_order_history(message: Message, session: AsyncSession, dao: dict)
     except Exception as e:
         logger.error(f"Error in /my_bookings for user {message.from_user.id}: {e}", exc_info=True)
         await message.answer("❌ Could not fetch your bookings. Please try again later.")
+
+
+
