@@ -3,12 +3,9 @@ import datetime
 
 from aiogram import Bot
 
-from bot.config import get_config
-from bot.keyboards.default import general_keyboard_menu
+from bot.config import config
 from bot.services.crypto import get_invoice_status
-from bot.database.db import get_unpaid_orders, mark_order_paid, mark_order_canceled, mark_notified_admin
 
-config = get_config()
 ADMIN_IDS = config.admin_ids
 
 async def monitor_payments(bot: Bot):
@@ -72,6 +69,7 @@ async def admin_notification_paid_order(order: dict, bot: Bot) -> None:
             f"Total: {order['price']} USDT"
         )
 
+
 async def admin_notification_manual_order(order: dict, bot: Bot) -> None:
     # Admin Notification about new order with manual payment
     for admin_id in ADMIN_IDS:
@@ -94,10 +92,9 @@ async def admin_notification_not_route(order: dict, bot: Bot) -> None:
         await bot.send_message(
             admin_id,
             "📥 New NOT FOUND route order:\n\n"
-            f"👤 @{order['username']} ({order['user_id']})\n"
+            f"👤 @{order['username']}\n"
             f"🛤 {order['departure']} → {order['destination']}\n"
             f"👥 Quantity: {order['quantity']}\n"
             f"🕐 Date: {order['travel_date']}\n"
             f"🪑 Seat: {order['seat_type']}\n\n"
-            f"📌 Order ID: {order['id']}"
         )

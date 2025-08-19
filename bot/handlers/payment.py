@@ -8,6 +8,10 @@ from bot.keyboards.user import general_keyboard_menu, get_keyboard_pay_btn
 from bot.database.schemas.payment import PaymentCreate
 from bot.services.crypto import create_invoice
 
+from loguru import logger
+
+from bot.tasks import admin_notification_manual_order
+
 payment_router = Router()
 
 
@@ -27,7 +31,7 @@ async def process_payment(callback: CallbackQuery, session: AsyncSession, dao: d
 
         # Extract payment method
         method = callback.data.removeprefix("pay_")
-        payment = await payment_dao.add(PaymentCreate(payment_method=method))
+        payment = await payment_dao.add(PaymentCreate(payment_method=method, invoice_id=None))
 
         # Update booking with payment reference
         await booking_dao.update(
@@ -48,7 +52,8 @@ async def process_payment(callback: CallbackQuery, session: AsyncSession, dao: d
         # Cryptobot payment flow
         if method == "cryptobot":
             invoice = await create_invoice(amount=last_booking.price)
-            payment.invoice_id = invoice.invoice_id  # store invoice ID for tracking
+            payment.invoice_id = invoice.invoice_id
+            await session.commit()  # store invoice ID for tracking
 
             await callback.message.answer(
                 "✅ Booking confirmed.\n\n💳 Please complete your payment:",

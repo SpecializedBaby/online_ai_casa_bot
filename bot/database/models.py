@@ -42,12 +42,12 @@ class Booking(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"))
-    router_id: Mapped[int] = mapped_column(Integer, ForeignKey("routes.id"))
-    payment_id: Mapped[int] = mapped_column(Integer, ForeignKey("payments.id"))
-    date: Mapped[datetime] = mapped_column(Date)
+    route_id: Mapped[int] = mapped_column(Integer, ForeignKey("routes.id"), nullable=False)
+    payment_id: Mapped[int] = mapped_column(Integer, ForeignKey("payments.id"), nullable=True)
+    date: Mapped[str]
     seat_type: Mapped[str]
     quantity: Mapped[int] = mapped_column(Integer, default=1)
-    price: Mapped[float] = mapped_column(REAL)
+    price: Mapped[float] = mapped_column(REAL, nullable=True)
     status: Mapped[str] = mapped_column(String, default="unpaid")
     user: Mapped["User"] = relationship("User", back_populates="bookings")
     route: Mapped["Route"] = relationship("Route", back_populates="bookings")

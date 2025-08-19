@@ -5,12 +5,14 @@ from aiogram.filters import Command
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bot.config import config
 from bot.database.dao.dao import BookingDAO, RouteDAO
-from bot.database.schemas.booking import BookingsByUser, CreateBooking, BookingBase, BookingByStatus
+from bot.database.schemas.booking import BookingBase, BookingByStatus, CreateBooking
 from bot.database.schemas.route import GetRoute
 from bot.keyboards.user import get_keyboard_seat_classes, get_keyboard_quantity_number, get_keyboard_confirmation, \
     general_keyboard_menu, get_keyboard_payment_method
 from bot.states.user import JourneyBooking
+from bot.tasks import admin_notification_not_route
 
 booking_router = Router()
 
@@ -113,24 +115,13 @@ async def process_quantity(
 ):
     """
     Handle quantity selection for a journey booking.
-    Validates input, calculates total price, creates booking, and asks for confirmation.
+    Validates input, calculates total price, and asks user to confirm.
+    If no route exists -> notify admin, do not save booking.
     """
     user_id = callback.from_user.id
     booking_dao: BookingDAO = dao["booking"]
     route_dao: RouteDAO = dao["route"]
-    data = await state.get_data()
-    booking = CreateBooking(
-        user_id=user_id,
-        route_id=None,
-        payment_id=None,
-        date=data["travel_date"],
-        seat_type=data["seat_type"],
-        quantity=None,
-        price=None,
-        status="unpaid"
-    )
-
-    # 1 Validate quantity
+    # 1. Validate quantity
     try:
         qty = int(callback.data)
         if qty < 1 or qty > 10:
@@ -139,12 +130,11 @@ async def process_quantity(
         logger.warning(f"Invalid quantity '{callback.data}' from user {user_id}: {e}")
         await callback.message.answer("❌ Enter a number between 1 and 10.")
         return
-    else:
-        # Save in Schema quantity field
-        booking.quantity = qty
 
+    await state.update_data(quantity=qty)
+    data = await state.get_data()
     try:
-        # 3 Fetch route
+        # 2. Fetch route
         route = await route_dao.find_one_or_none(
             filters=GetRoute(
                 departure=data["departure"],
@@ -152,22 +142,38 @@ async def process_quantity(
             )
         )
         if not route:
-            # Save booking like MANUAL
-            booking.status = "manual"
-            raise LookupError("Route not found")
-        # Save route in Schema
-        booking.route_id = route.id
+            # Notify admin about missing route
+            logger.error(f"Route not found for booking request: {data} by user {user_id}")
+            data["username"] = callback.from_user.username
+            await admin_notification_not_route(order=data, bot=callback.bot)
+            await callback.message.answer(
+                "❌ We couldn't find this route.\n"
+                "📩 Your request has been sent to support. Please wait for a reply.",
+                reply_markup=general_keyboard_menu()
+            )
+            return  # 🚫 Do not save booking if no route
 
-        # 4 Calculate total and save booking
+        # 3. Calculate total
         total = float(route.cost) * qty
         await state.update_data(quantity=qty, price=total)
+        data = await state.get_data()
         await callback.message.delete()
 
-        # Save Schema with status CONFIRMATION
-        booking.price = total
-        booking.status = "confirming"
+        # 4. Save booking only if route exists
+        logger.info(f"route.id = {route.id}")
+        booking = CreateBooking(
+            user_id=user_id,
+            route_id=1,
+            payment_id=None,
+            date=data["travel_date"],
+            seat_type=data["seat_type"],
+            quantity=data["quantity"],
+            price=data["price"],
+            status="confirming",
+        )
+        await booking_dao.add(booking)
 
-        # 5 Ask user for confirmation
+        # 5. Ask user for confirmation
         await callback.message.answer(
             "✅ Please confirm your booking:\n\n"
             f"🛤 Route: {data['departure']} → {data['destination']}\n"
@@ -178,18 +184,9 @@ async def process_quantity(
             reply_markup=get_keyboard_confirmation()
         )
 
-    except LookupError:
-        # Save fallback booking if route is missing
-        logger.error(f"Route not found for booking request: {data} by user {user_id}")
-        await callback.message.answer(
-            "❌ We couldn't find this route.\n"
-            "📩 Your request has been sent to support. Please wait for a reply.",
-            reply_markup=general_keyboard_menu()
-        )
     except Exception as e:
         logger.error(f"Error processing quantity for user {user_id}: {e}", exc_info=True)
         await callback.message.answer("❌ Something went wrong. Please try again later.")
     finally:
-        # 6 save data and Clear FSM state regardless of outcome
-        await booking_dao.add(booking)
+        # Clear FSM always
         await state.clear()

@@ -98,7 +98,7 @@ class BaseDAO(Generic[T]):
             raise e
         return new_instances
 
-    async def update(self, filters: BaseModel, values: BaseModel):
+    async def update(self, filters: BaseModel, values: BaseModel) -> int:
         filter_dict = filters.model_dump(exclude_unset=True)
         values_dict = values.model_dump(exclude_unset=True)
         logger.info(f"Updating columns {self.model.__name__} by filter: {filter_dict} with options: {values_dict}")

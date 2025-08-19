@@ -6,7 +6,7 @@ from aiogram.utils.callback_answer import CallbackAnswerMiddleware
 
 from bot.config import config
 from bot.database.main import async_session_maker
-from bot.handlers import user, admin, other
+from bot.handlers import user, admin, other, booking, payment
 from bot.middlewares.db import DbSessionMiddleware
 from bot.middlewares.state_clear import StateClearMiddleware
 
@@ -28,6 +28,8 @@ async def main():
     dp.include_router(user.user_router)
     dp.include_router(admin.admin_router)
     dp.include_router(other.other_router)
+    dp.include_router(booking.booking_router)
+    dp.include_router(payment.payment_router)
 
     print("https://t.me/online_ai_casa_bot")
 
