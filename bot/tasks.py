@@ -2,51 +2,70 @@ import asyncio
 import datetime
 
 from aiogram import Bot
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import config
+from bot.database.dao.dao import BookingDAO
+from bot.database.schemas.booking import BookingByStatus
+from bot.keyboards.user import general_keyboard_menu
 from bot.services.crypto import get_invoice_status
 
-ADMIN_IDS = config.admin_ids
+ADMIN_IDS = config.ADMIN_IDS
 
-async def monitor_payments(bot: Bot):
+
+async def monitor_payments(bot: Bot, session: AsyncSession, dao: dict):
+    """
+    Periodically check unpaid orders, handle payments, notify users/admins,
+    and cancel expired bookings.
+    """
+    booking_dao = BookingDAO(session)
+
     while True:
-        unpaid_orders = await get_unpaid_orders()
-        time_now = datetime.datetime.utcnow()
+        try:
+            unpaid_orders = await booking_dao.find_all(filters=BookingByStatus(status="unpaid"))
+            time_now = datetime.datetime.utcnow()
 
-        # Order monitor
-        for order in unpaid_orders:
-            if order["payment_method"] == "pay_cryptobot":
-                status = await get_invoice_status(order["invoice_id"])
-
-                if status == "paid":
-                    await user_notification_paid_order(user_id=order["user_id"], bot=bot)
-                    await mark_order_paid(order["id"])
-                    await admin_notification_paid_order(order=order, bot=bot)
-                    await mark_notified_admin(order["id"])
-                    continue
-
-            elif order["payment_method"] == "pay_manual" and not order["notified"]:
-                await admin_notification_manual_order(order=order, bot=bot)
-                await mark_notified_admin(order["id"])
-            # Order what didnt found route
-            elif not order["notified"] and order["price"] is None:
-                await admin_notification_not_route(order=order, bot=bot)
-                await mark_notified_admin(order["id"])
-
-            # Check expiration
-            created_time = datetime.datetime.strptime(order["created_time"], "%Y-%m-%d %H:%M:%S")
-            if (time_now - created_time).total_seconds() > (60 * 60):  # 60min
-                await mark_order_canceled(order["id"])
+            for order in unpaid_orders:
                 try:
-                    await bot.send_message(
-                        order["user_id"],
-                        "⌛ Your ticket was canceled due to unpaid status after 60 minutes."
-                    )
-                except Exception as e:
-                    print(e)  # debug
-                    pass  # if user force stop the bot
+                    # --- Cryptobot payment flow ---
+                    if order["payment_method"] == "pay_cryptobot":
+                        status = await get_invoice_status(order["invoice_id"])
+                        if status == "paid":
+                            await user_notification_paid_order(user_id=order["user_id"], bot=bot)
+                            await mark_order_paid(order["id"])
+                            await admin_notification_paid_order(order=order, bot=bot)
+                            await mark_notified_admin(order["id"])
+                            continue
 
-        await asyncio.sleep(30)  # check every 30 seconds
+                    # --- Manual payment flow ---
+                    elif order["payment_method"] == "pay_manual" and not order["notified"]:
+                        await admin_notification_manual_order(order=order, bot=bot)
+                        await mark_notified_admin(order["id"])
+
+                    # --- Orders without a matching route ---
+                    elif not order["notified"] and order.get("price") is None:
+                        await admin_notification_not_route(order=order, bot=bot)
+                        await mark_notified_admin(order["id"])
+
+                    # --- Expiration check ---
+                    created_time = datetime.datetime.strptime(order["created_time"], "%Y-%m-%d %H:%M:%S")
+                    if (time_now - created_time).total_seconds() > 3600:  # 60 minutes
+                        await mark_order_canceled(order["id"])
+                        try:
+                            await bot.send_message(
+                                order["user_id"],
+                                "⌛ Your booking was canceled due to unpaid status after 60 minutes."
+                            )
+                        except Exception as e:
+                            logger.warning(f"Failed to notify user {order['user_id']} about cancellation: {e}")
+
+                except Exception as e:
+                    logger.error(f"Error processing order {order.get('id')}: {e}", exc_info=True)
+
+        except Exception as e:
+            logger.error(f"Error in monitor_payments loop: {e}", exc_info=True)
+
+        await asyncio.sleep(30)  # run every 30s
 
 
 async def user_notification_paid_order(user_id: int, bot: Bot):

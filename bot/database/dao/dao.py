@@ -1,3 +1,4 @@
+from datetime import datetime
 from loguru import logger
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.future import select
@@ -33,4 +34,47 @@ class BookingDAO(BaseDAO[Booking]):
             return record
         except SQLAlchemyError as e:
             logger.error(f"Error fetching last booking for user {user_id}: {e}")
+            raise
+
+    async def cancel_book(self, book_id: int):
+        try:
+            query = (
+                update(self.model)
+                .filter_by(id=book_id)
+                .values(status="canceled")
+                .execution_options(synchronize_session="fetch")
+            )
+            result = await self._session.execute(query)
+            await self._session.flush()
+            return result.rowcount
+        except SQLAlchemyError as e:
+            logger.error(f"Error when canceling a book with ID {book_id}: {e}")
+            await self._session.rollback()
+            raise
+
+    async def delete_book(self, book_id: int):
+        try:
+            query = delete(self.model).filter_by(id=book_id)
+            result = await self._session.execute(query)
+            logger.info(f"Deleted {result.rownt} records.")
+            await self._session.flush()
+            return result.rowcount
+        except SQLAlchemyError as e:
+            logger.error(f"Error when removing records: {e}")
+            raise
+
+    async def mark_paid(self, book_id: int):
+        try:
+            query = (
+                update(self.model)
+                .filter_by(id=book_id)
+                .values(status="paid")
+                .execution_options(synchronize_session="fetch")
+            )
+            result = await self._session.execute(query)
+            await self._session.flush()
+            return result.rowcount
+        except SQLAlchemyError as e:
+            logger.error(f"Error when canceling a book with ID {book_id}: {e}")
+            await self._session.rollback()
             raise

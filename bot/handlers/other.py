@@ -9,7 +9,7 @@ other_router = Router()
 
 @other_router.message(Command("help"))
 async def get_help(message: Message):
-    supports = "\n".join(config.supports)
+    supports = "\n".join(config.SUPPORTS)
 
     await message.answer(
         f"ALl supports here:\n{supports}"

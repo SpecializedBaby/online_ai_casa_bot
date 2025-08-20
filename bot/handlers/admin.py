@@ -30,7 +30,7 @@ class UserIdNotFound(Exception): ...
 def admin_required(handler):
     @wraps(handler)
     async def wrapper(message: Message, *args, **kwargs):
-        if str(message.from_user.id) not in config.admin_ids:
+        if str(message.from_user.id) not in config.ADMIN_IDS:
             await message.answer("🚫 You are not authorized.")
             return
         return await handler(message, *args, **kwargs)

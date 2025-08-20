@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import BigInteger, String
+from sqlalchemy import BigInteger, String, Boolean
 from sqlalchemy import Integer, Date, ForeignKey, REAL
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
@@ -49,6 +49,7 @@ class Booking(Base):
     quantity: Mapped[int] = mapped_column(Integer, default=1)
     price: Mapped[float] = mapped_column(REAL, nullable=True)
     status: Mapped[str] = mapped_column(String, default="unpaid")
+    notified: Mapped[bool] = mapped_column(Boolean, default=False)
     user: Mapped["User"] = relationship("User", back_populates="bookings")
     route: Mapped["Route"] = relationship("Route", back_populates="bookings")
     payment: Mapped["Payment"] = relationship("Payment", back_populates="booking")
