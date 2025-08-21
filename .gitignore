@@ -5,3 +5,5 @@ DOC.txt
 *.db
 *.csv
 __pycache__
+*.txt
+*.sqlite

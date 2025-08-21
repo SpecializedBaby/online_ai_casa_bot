@@ -16,7 +16,7 @@ async def monitor_crypto_payment(data: dict):
     invoice_id = data["invoice_id"]
     user_id = data["user_id"]
 
-    # Checking the payment status in 30sec! APSSheduler
+    # Checking the payment status in 30sec! APSheduler
     scheduler.add_job(
         check_invoice_status,
         "interval",
@@ -58,6 +58,7 @@ async def schedule_expiration(data: dict):
         id=f"expire_{booking_id}",
         replace_existing=True,
     )
+
 
 @router.subscriber("admin_msg")
 async def send_booking_msg(msg: str):
@@ -101,6 +102,6 @@ async def schedule_user_notifications(user_id: int):
         )
 
 
-async def disable_booking(book_id: int):
+async def disable_booking():
     async with async_session_maker() as session:
-        await BookingDAO(session).cancel_book(book_id=book_id)
+        await BookingDAO(session).cancel_book()

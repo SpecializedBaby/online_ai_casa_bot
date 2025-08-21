@@ -4,16 +4,7 @@ from aiocryptopay.models.invoice import Invoice
 
 from loguru import logger
 
-from bot.config import config
-
-if config.NETWORK_CRYPTO_API == "TEST_NET":
-    network_API = Networks.TEST_NET
-elif config.NETWORK_CRYPTO_API == "MAIN_NET":
-    network_API = Networks.MAIN_NET
-else:
-    network_API = None
-
-crypto = AioCryptoPay(token=config.CRYPTO_PAY_TOKEN, network=network_API)
+from bot.config import crypto
 
 
 async def get_info_crypto_app():

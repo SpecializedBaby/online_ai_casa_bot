@@ -10,6 +10,8 @@ from bot.handlers import user, admin, other, booking, payment
 from bot.middlewares.db import DbSessionMiddleware
 from bot.middlewares.state_clear import StateClearMiddleware
 
+from loguru import logger
+
 bot = Bot(token=config.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=MemoryStorage())
 

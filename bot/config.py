@@ -1,6 +1,7 @@
 import os
 from urllib.parse import quote
 
+from aiocryptopay import Networks, AioCryptoPay
 from faststream.rabbit import RabbitBroker
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
@@ -16,7 +17,7 @@ class Config(BaseSettings):
     DB_URL: str
     STORE_URL: str = 'sqlite:///./jobs.sqlite'
     NETWORK_CRYPTO_API: str
-    SUPPORTS: list
+    SUPPORTS: list[str]
 
     BASE_URL: str
     RABBITMQ_USERNAME: str
@@ -57,3 +58,8 @@ broker = RabbitBroker(url=config.rabbitmq_url)
 
 # Creating a planner of tasks
 scheduler = AsyncIOScheduler(jobstores={"default": SQLAlchemyJobStore(url=config.STORE_URL)})
+
+# Crypto API method
+method = config.NETWORK_CRYPTO_API
+network_API = Networks.TEST_NET if method == "TEST_NET" else Networks.MAIN_NET
+crypto = AioCryptoPay(token=config.CRYPTO_PAY_TOKEN, network=network_API)
