@@ -1,5 +1,6 @@
-from datetime import date
-from pydantic import BaseModel, EmailStr
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 class BookingBase(BaseModel):
@@ -24,11 +25,11 @@ class BookingUpdate(BookingBase, BookingByStatus):
 class CreateBooking(BaseModel):
     user_id: int
     route_id: int
-    payment_id: int | None
+    payment_id: Optional[int] = None
     date: str
-    seat_type: str
-    quantity: int | None
-    price: float | None
+    seat_type: str = "standard"
+    quantity: Optional[int] = 1
+    price: Optional[float]
     status: str
 
 

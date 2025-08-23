@@ -1,19 +1,18 @@
 from datetime import date
+from typing import Optional
+
 from pydantic import BaseModel, EmailStr
 
 
-class UserTGID(BaseModel):
-    id: int
+class UserBase(BaseModel):
+    id: int  # TG user id
 
     class Config:
         from_attributes = True
 
 
-class UserCreate(UserTGID):
+class UserCreate(UserBase):
     username: str
     full_name: str
-
-
-class UserRegister(UserCreate):
-    birthday: str
-    address: str
+    birthday: Optional[str] = None
+    address: Optional[str] = None

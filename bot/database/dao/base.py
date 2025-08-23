@@ -114,11 +114,11 @@ class BaseDAO(Generic[T]):
             logger.info(f"Updated {result.rowcount} rows.")
             return result.rowcount
         except SQLAlchemyError as e:
-            await self._session.rollback()
+
             logger.error(f"Error in Update method: {e}")
             raise e
 
-    async def delete(self, session: AsyncSession, filters: BaseModel):
+    async def delete(self, filters: BaseModel):
         filter_dict = filters.model_dump(exclude_unset=True)
         logger.info(f"Delete method {self.model.__name__} by filter: {filter_dict}")
         if not filter_dict:
@@ -127,11 +127,11 @@ class BaseDAO(Generic[T]):
 
         query = sqlalchemy_delete(self.model).filter_by(**filter_dict)
         try:
-            result = await session.execute(query)
-            await session.commit()
+            result = await self._session.execute(query)
+            await self._session.commit()
             logger.info(f"Deleted {result.rowcount}.")
             return result.rowcount
         except SQLAlchemyError as e:
-            await session.rollback()
+            await self._session.rollback()
             logger.error(f"Error when tried delete row: {e}")
             raise e

@@ -11,8 +11,6 @@ from bot.services.crypto import create_invoice
 
 from loguru import logger
 
-from bot.tasks import admin_notification_manual_order
-
 payment_router = Router()
 
 
@@ -59,7 +57,6 @@ async def process_payment(callback: CallbackQuery, session: AsyncSession, dao: d
                 f"📌 Booking ID: {last_booking.id}"
             )
             await broker.publish(message=admin_text, queue="admin_msg")
-            await broker.publish(message=user_id, queue="noti_user")
             return
 
         # Cryptobot payment flow

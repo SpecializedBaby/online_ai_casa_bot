@@ -4,7 +4,7 @@ from functools import wraps
 
 from loguru import logger
 
-from aiogram import Router, F, Bot
+from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message, FSInputFile
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,7 +30,7 @@ class UserIdNotFound(Exception): ...
 def admin_required(handler):
     @wraps(handler)
     async def wrapper(message: Message, *args, **kwargs):
-        if str(message.from_user.id) not in config.ADMIN_IDS:
+        if message.from_user.id not in config.ADMIN_IDS:
             await message.answer("🚫 You are not authorized.")
             return
         return await handler(message, *args, **kwargs)
@@ -44,6 +44,31 @@ async def get_admin_panel(message: Message):
         "Admin authorized.",
         reply_markup=admin_general_keyboard_menu()
     )
+
+
+@admin_router.message(Command("booking_id"))
+@admin_required
+async def get_booking_by_id(message: Message, session: AsyncSession, dao: dict):
+    booking_dao: BookingDAO = dao["booking"]
+    _, book_id = message.text.strip().split()
+
+    try:
+        booking = await booking_dao.find_one_or_none_by_id(book_id)
+        if not booking:
+            raise BookingNotFound()
+
+        await message.answer(
+            f"User: @{booking.user.username} ({booking_dao})\n"
+                f"Route: {booking.route.departure} → {booking.route.destination}\n"
+                f"Quantity: {booking.quantity}\n"
+                f"Total: {booking.price} USDT",
+            reply_markup=admin_general_keyboard_menu()
+        )
+    except BookingNotFound:
+        await message.answer("📭 No bookings found.")
+    except Exception as e:
+        logger.error(f"Error during get_booking_by_id: {e}")
+        await message.answer(f"❌ Failed to get booking {book_id}. Try /booking_id <book_id>.")
 
 
 @admin_router.message(Command("export_bookings"))
@@ -105,11 +130,10 @@ async def update_routes(message: Message, session: AsyncSession, dao: dict):
 @admin_required
 async def set_paid_booking(message: Message, session: AsyncSession, dao: dict):
     try:
-
-        booking_id = int(message.text.split()[1])
+        _, book_id = message.text.strip().split()
         booking_dao: BookingDAO = dao["booking"]
-        await booking_dao.update(filters=BookingBase(id=booking_id), values=BookingByStatus(status="paid"))
-        await message.answer(f"Order {booking_id} has paid!")
+        await booking_dao.mark_paid(int(book_id))
+        await message.answer(f"Order {book_id} has paid!")
     except Exception as e:
         logger.error(f"Get error in mark_paid method: {e}")
         await message.answer("❗ Usage: /mark_paid <order_id>")
@@ -121,7 +145,7 @@ async def set_canceled_booking(message: Message, session: AsyncSession, dao: dic
     try:
         booking_id = int(message.text.split()[1])
         booking_dao: BookingDAO = dao["booking"]
-        await booking_dao.update(filters=BookingBase(id=booking_id), values=BookingByStatus(status="canceled"))
+        await booking_dao.mark_cancel(book_id=booking_id)
         await message.answer(f"Order {booking_id} has canceled!")
     except Exception as e:
         logger.error(f"Get error in set_canceled_booking method: {e}")
