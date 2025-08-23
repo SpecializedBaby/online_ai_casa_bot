@@ -13,7 +13,6 @@ def general_keyboard_menu() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True, is_persistent=True)
 
 
-# Keyboard Monthly DB Pass
 def get_months_keyboard() -> InlineKeyboardMarkup:
     today = datetime.date.today()
     months = [(today + datetime.timedelta(days=30 * i)).strftime("%B") for i in range(5)]

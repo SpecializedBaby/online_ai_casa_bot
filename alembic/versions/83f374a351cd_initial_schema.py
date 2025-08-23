@@ -1,8 +1,8 @@
-"""First migration
+"""initial schema
 
-Revision ID: 30a712bf1741
+Revision ID: 83f374a351cd
 Revises: 
-Create Date: 2025-08-19 23:11:12.519464
+Create Date: 2025-08-23 17:42:24.055021
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '30a712bf1741'
+revision: str = '83f374a351cd'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -33,10 +33,11 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('departure', sa.String(), nullable=False),
     sa.Column('destination', sa.String(), nullable=False),
-    sa.Column('cost', sa.Float(), nullable=True),
+    sa.Column('cost', sa.Float(), nullable=False),
     sa.Column('created_at', sa.TIMESTAMP(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('updated_at', sa.TIMESTAMP(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('departure', 'destination', name='unique_points')
     )
     op.create_table('users',
     sa.Column('id', sa.BigInteger(), autoincrement=False, nullable=False),
@@ -56,7 +57,7 @@ def upgrade() -> None:
     sa.Column('date', sa.String(), nullable=False),
     sa.Column('seat_type', sa.String(), nullable=False),
     sa.Column('quantity', sa.Integer(), nullable=False),
-    sa.Column('price', sa.REAL(), nullable=True),
+    sa.Column('price', sa.REAL(), nullable=False),
     sa.Column('status', sa.String(), nullable=False),
     sa.Column('created_at', sa.TIMESTAMP(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('updated_at', sa.TIMESTAMP(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),

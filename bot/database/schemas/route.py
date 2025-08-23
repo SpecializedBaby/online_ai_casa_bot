@@ -1,5 +1,4 @@
-from datetime import date
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 
 class RouteBase(BaseModel):
@@ -9,10 +8,13 @@ class RouteBase(BaseModel):
         from_attributes = True
 
 
-class GetRoute(BaseModel):
+class RouteFind(BaseModel):
     departure: str
     destination: str
 
+    class Config:
+        from_attributes = True
 
-class RouteCreate(GetRoute):
+
+class RouteCreate(RouteFind):
     cost: float

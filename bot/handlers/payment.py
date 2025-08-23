@@ -2,6 +2,7 @@ from aiogram import Router
 from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bot.config import broker
 from bot.database.dao.dao import BookingDAO, PaymentDAO
 from bot.database.schemas.booking import BookingBase, SetPayment
 from bot.keyboards.user import general_keyboard_menu, get_keyboard_pay_btn
@@ -9,8 +10,6 @@ from bot.database.schemas.payment import PaymentCreate
 from bot.services.crypto import create_invoice
 
 from loguru import logger
-
-from bot.tasks import admin_notification_manual_order
 
 payment_router = Router()
 
@@ -47,6 +46,17 @@ async def process_payment(callback: CallbackQuery, session: AsyncSession, dao: d
                 "🕐 Please wait for support to contact you.",
                 reply_markup=general_keyboard_menu()
             )
+            admin_text = (
+                "📥 New MANUAL PAYMENT booking:\n\n"
+                f"👤 @{callback.from_user.username} ({user_id})\n"
+                f"🛤 {last_booking.route.departure} → {last_booking.route.destination}\n"
+                f"👥 Quantity: {last_booking.quantity}\n"
+                f"💰 Price: {last_booking.price} USDT\n"
+                f"🕐 Date: {last_booking.date}\n"
+                f"🪑 Seat: {last_booking.seat_type}\n\n"
+                f"📌 Booking ID: {last_booking.id}"
+            )
+            await broker.publish(message=admin_text, queue="admin_msg")
             return
 
         # Cryptobot payment flow
@@ -54,7 +64,10 @@ async def process_payment(callback: CallbackQuery, session: AsyncSession, dao: d
             invoice = await create_invoice(amount=last_booking.price)
             payment.invoice_id = invoice.invoice_id
             await session.commit()  # store invoice ID for tracking
-
+            await broker.publish(
+                message={"booking_id": last_booking.id, "invoice_id": invoice.invoice_id, "user_id": user_id},
+                queue="crypto_check",
+            )
             await callback.message.answer(
                 "✅ Booking confirmed.\n\n💳 Please complete your payment:",
                 reply_markup=get_keyboard_pay_btn(invoice=invoice)

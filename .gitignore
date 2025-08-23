@@ -4,3 +4,6 @@ DOC.txt
 .env
 *.db
 *.csv
+__pycache__
+*.txt
+*.sqlite

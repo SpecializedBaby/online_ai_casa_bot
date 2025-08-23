@@ -8,14 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.config import config
 from bot.database.dao.dao import BookingDAO, RouteDAO
 from bot.database.schemas.booking import BookingBase, BookingByStatus, CreateBooking
-from bot.database.schemas.route import GetRoute
+from bot.database.schemas.route import RouteFind
 from bot.keyboards.user import get_keyboard_seat_classes, get_keyboard_quantity_number, get_keyboard_confirmation, \
     general_keyboard_menu, get_keyboard_payment_method
 from bot.states.user import JourneyBooking
-from bot.tasks import admin_notification_not_route
+
 
 booking_router = Router()
-
 
 @booking_router.callback_query(lambda c: c.data in ["confirm_booking", "cancel_booking"])
 async def process_confirm(callback: CallbackQuery, session: AsyncSession, dao: dict):
@@ -116,7 +115,7 @@ async def process_quantity(
     """
     Handle quantity selection for a journey booking.
     Validates input, calculates total price, and asks user to confirm.
-    If no route exists -> notify admin, do not save booking.
+    If no route store in log.txt, do not save booking.
     """
     user_id = callback.from_user.id
     booking_dao: BookingDAO = dao["booking"]
@@ -136,16 +135,14 @@ async def process_quantity(
     try:
         # 2. Fetch route
         route = await route_dao.find_one_or_none(
-            filters=GetRoute(
+            filters=RouteFind(
                 departure=data["departure"],
                 destination=data["destination"]
             )
         )
         if not route:
-            # Notify admin about missing route
-            logger.error(f"Route not found for booking request: {data} by user {user_id}")
-            data["username"] = callback.from_user.username
-            await admin_notification_not_route(order=data, bot=callback.bot)
+            # Save as error and can see in log.txt
+            logger.error(f"Route not found: {data['departure']} -> {data['destination']}")
             await callback.message.answer(
                 "❌ We couldn't find this route.\n"
                 "📩 Your request has been sent to support. Please wait for a reply.",
