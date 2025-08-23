@@ -6,10 +6,12 @@ from loguru import logger
 from bot.create_bot import dp, start_bot, bot, stop_bot
 from bot.config import config, broker, scheduler
 from bot.api.router import router as router_fast_stream, disable_booking
+from bot.database.main import init_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await init_db()
     logger.info("The bot is launched ...")
     await start_bot()
     await broker.start()

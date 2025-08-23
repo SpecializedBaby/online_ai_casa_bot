@@ -4,6 +4,7 @@ from decimal import Decimal
 from sqlalchemy import inspect, TIMESTAMP, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine, AsyncSession
+from loguru import logger
 
 from bot.config import config
 
@@ -51,3 +52,11 @@ class Base(AsyncAttrs, DeclarativeBase):
                 result[column.key] = value
 
         return result
+
+
+async def init_db():
+    """Create tables and initialize database."""
+    async with engine.begin() as conn:
+        logger.info("Creating database tables...")
+        await conn.run_sync(Base.metadata.create_all)
+        logger.success("Database initialized!")
