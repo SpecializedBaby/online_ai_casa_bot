@@ -116,6 +116,11 @@ async def update_routes(message: Message, session: AsyncSession, dao: dict):
         _, dep, dest, cost = message.text.strip().split()
         cost = float(cost)
         route_dao: RouteDAO = dao["route"]
+        route = route_dao.get_route(dep, dest)
+        if route:
+            await route_dao.update_cost(dep, dest, cost)
+            await message.answer(f"✅ Route {dep} → {dest} already exict! Price updated!")
+            return
         await route_dao.add(
             RouteCreate(departure=dep, destination=dest, cost=cost)
         )

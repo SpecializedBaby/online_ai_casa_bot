@@ -16,5 +16,10 @@ class RouteFind(BaseModel):
         from_attributes = True
 
 
-class RouteCreate(RouteFind):
+class RouteCostUpdate(BaseModel):
     cost: float
+
+
+class RouteCreate(RouteFind, RouteCostUpdate):
+    pass
+

@@ -1,11 +1,13 @@
 from datetime import datetime
 from loguru import logger
+from pydantic import BaseModel
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.future import select
 
 from bot.database.models import User, Route, Payment, Booking
 from bot.database.dao.base import BaseDAO
 from bot.database.schemas.booking import BookingBase, BookingByStatus, BookingsByUser
+from bot.database.schemas.route import RouteFind, RouteCostUpdate
 
 
 class UserDAO(BaseDAO[User]):
@@ -14,6 +16,29 @@ class UserDAO(BaseDAO[User]):
 
 class RouteDAO(BaseDAO[Route]):
     model = Route
+
+    async def get_route(self, departure: str, destination: str) -> Route:
+        try:
+            result = await self.find_one_or_none(
+                filters=RouteFind(
+                    departure=departure,
+                    destination=destination
+                )
+            )
+            return result
+        except SQLAlchemyError as e:
+            logger.error(f"Error fetching route by names {departure} -> {destination}: {e}")
+            raise
+
+    async def update_cost(self, dep: str, dest: str, cost: float):
+        try:
+            await self.update(
+                filters=RouteFind(departure=dep, destination=dest),
+                values=RouteCostUpdate(cost=cost)
+            )
+        except SQLAlchemyError as e:
+            logger.error(f"Error update route cost({cost}) by names {dep} -> {dest}: {e}")
+            raise
 
 
 class PaymentDAO(BaseDAO[Payment]):
@@ -33,8 +58,6 @@ class BookingDAO(BaseDAO[Booking]):
         except SQLAlchemyError as e:
             logger.error(f"Error fetching last booking for user {user_id}: {e}")
             raise
-
-
 
     async def find_last_by_user(self, user_id: int) -> Booking | None:
         logger.info(f"Get last booking by User_ID: {user_id}")
@@ -94,7 +117,10 @@ class BookingDAO(BaseDAO[Booking]):
 
     async def mark_cancel(self, book_id: int):
         try:
-            result = await self.update(filters=BookingBase(id=book_id), values=BookingByStatus(status="canceled"))
+            result = await self.update(
+                filters=BookingBase(id=book_id),
+                values=BookingByStatus(status="canceled")
+            )
             await self._session.flush()
             return result.rowcount
         except SQLAlchemyError as e:
