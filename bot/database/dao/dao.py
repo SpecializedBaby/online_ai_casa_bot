@@ -1,17 +1,96 @@
 from datetime import datetime
 from loguru import logger
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.future import select
 
-from bot.database.models import User, Route, Payment, Booking
+from bot.database.models import User, Route, Payment, Booking, Offer, MonthlyPass
 from bot.database.dao.base import BaseDAO
 from bot.database.schemas.booking import BookingBase, BookingByStatus, BookingsByUser
 from bot.database.schemas.route import RouteFind, RouteCostUpdate
+from bot.database.schemas.offers import OfferName, OffersCreate, OffersBase
+from bot.database.schemas.monthly_pass import PassCreate
+from bot.database.schemas.user import UserUpdate, UserBase
+
+
+class OfferDAO(BaseDAO[Offer]):
+    model = Offer
+
+    async def create_or_update_offer(self, data: dict) -> str:
+        try:
+            offer_obj = OffersCreate(**data)
+
+            offer = await self.find_one_or_none(
+                filters=OfferName(name=offer_obj.name)
+            )
+
+            if offer:
+                await self.update(
+                    filters=OffersBase(id=offer.id),
+                    values=offer_obj
+                )
+                return "update"
+
+            await self.add(offer_obj)
+            return "Create"
+        except ValidationError as e:
+            logger.error(f"Pydantic error in create_or_update_offer: {e}", exc_info=True)
+            raise
+        except SQLAlchemyError as e:
+            logger.error(f"DB error in create_or_update_offer: {e}", exc_info=True)
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error in create_or_update_offer: {e}", exc_info=True)
+            raise
+
+
+class MonthlyPassDAO(BaseDAO[MonthlyPass]):
+    model = MonthlyPass
+
+    async def add_order(self, data: dict):
+        try:
+            order = await self.add(PassCreate(
+                user_id=data["user_id"],
+                payment_id=None,
+                offer_id=data["offer_id"],
+                month=data["month"]
+            ))
+            return order
+        except ValidationError as e:
+            logger.error(f"Pydantic error in create_or_update_offer: {e}", exc_info=True)
+            raise
+        except SQLAlchemyError as e:
+            logger.error(f"DB error in create_or_update_offer: {e}", exc_info=True)
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error in create_or_update_offer: {e}", exc_info=True)
+            raise
 
 
 class UserDAO(BaseDAO[User]):
     model = User
+
+    async def update_details(self, user_id: int, data: dict):
+        try:
+            result = await self.update(
+                filters=UserBase(id=user_id),
+                values=UserUpdate(
+                    username=data.get("username", None),
+                    full_name=data["full_name"],
+                    age=data["age"],
+                    zip_code=data["zip_code"]
+                )
+            )
+            return result
+        except ValidationError as e:
+            logger.error(f"Pydantic error in update_details: {e}", exc_info=True)
+            raise
+        except SQLAlchemyError as e:
+            logger.error(f"DB error in update_details: {e}", exc_info=True)
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error in update_details: {e}", exc_info=True)
+            raise
 
 
 class RouteDAO(BaseDAO[Route]):
@@ -26,16 +105,23 @@ class RouteDAO(BaseDAO[Route]):
                 )
             )
             return result
+        except ValidationError as e:
+            logger.error(f"Pydantic error in get_route by names: {departure} -> {destination}: {e}", exc_info=True)
+            raise
         except SQLAlchemyError as e:
-            logger.error(f"Error fetching route by names {departure} -> {destination}: {e}")
+            logger.error(f"DB Error fetching route by names {departure} -> {destination}: {e}", exc_info=True)
             raise
 
     async def update_cost(self, dep: str, dest: str, cost: float):
         try:
-            await self.update(
+            result = await self.update(
                 filters=RouteFind(departure=dep, destination=dest),
                 values=RouteCostUpdate(cost=cost)
             )
+            return result
+        except ValidationError as e:
+            logger.error(f"Pydantic error in update_cost by names: {dep} -> {dest}: {e}", exc_info=True)
+            raise
         except SQLAlchemyError as e:
             logger.error(f"Error update route cost({cost}) by names {dep} -> {dest}: {e}")
             raise
@@ -55,6 +141,9 @@ class BookingDAO(BaseDAO[Booking]):
                 BookingsByUser(user_id=user_id, status="paid")
             )
             return result
+        except ValidationError as e:
+            logger.error(f"Pydantic error in get_booking_paid by user_id: {user_id}: {e}", exc_info=True)
+            raise
         except SQLAlchemyError as e:
             logger.error(f"Error fetching last booking for user {user_id}: {e}")
             raise
@@ -72,24 +161,6 @@ class BookingDAO(BaseDAO[Booking]):
             logger.error(f"Error fetching last booking for user {user_id}: {e}")
             raise
 
-    async def cancel_expired_books(self):
-        try:
-            exp_time = datetime.utcnow() - timedelta(minutes=60)
-
-            query = (
-                select(self.model)
-                .filter_by(status="unpaid")
-                .where(self.model.created_at < exp_time)
-                .values(status="canceled")
-                .execution_options(synchronize_session="fetch")
-            )
-            result = await self._session.execute(query)
-            await self._session.flush()
-            return result.rowcount
-        except SQLAlchemyError as e:
-            logger.error(f"Error when canceling the expired books: {e}")
-            await self._session.rollback()
-            raise
 
     async def delete_book(self, book_id: int):
         try:
@@ -97,6 +168,9 @@ class BookingDAO(BaseDAO[Booking]):
             logger.info(f"Deleted {result.rowcount} records.")
             await self._session.flush()
             return result.rowcount
+        except ValidationError as e:
+            logger.error(f"Pydantic error in delete_book by book_id: {book_id}: {e}", exc_info=True)
+            raise
         except SQLAlchemyError as e:
             logger.error(f"Error when removing records: {e}")
             await self._session.rollback()
@@ -110,6 +184,9 @@ class BookingDAO(BaseDAO[Booking]):
             )
             await self._session.flush()
             return result.rowcount
+        except ValidationError as e:
+            logger.error(f"Pydantic error in mark_paid by book_id: {book_id}: {e}", exc_info=True)
+            raise
         except SQLAlchemyError as e:
             logger.error(f"Error when canceling a book with ID {book_id}: {e}")
             await self._session.rollback()
@@ -123,6 +200,9 @@ class BookingDAO(BaseDAO[Booking]):
             )
             await self._session.flush()
             return result.rowcount
+        except ValidationError as e:
+            logger.error(f"Pydantic error in mark_cancel by book_id: {book_id}: {e}", exc_info=True)
+            raise
         except SQLAlchemyError as e:
             logger.error(f"Error when canceling a book with ID {book_id}: {e}")
             await self._session.rollback()

@@ -17,12 +17,20 @@ async def lifespan(app: FastAPI):
     await broker.start()
     scheduler.start()
     scheduler.add_job(
-        disable_booking,
-        trigger="interval",
+        disable_expired_bookings,
+        "interval",
         minutes=30,
-        id="disable_booking_task",
-        replace_existing=True
+        id="disable_expired_bookings",
+        replace_existing=True,
     )
+    scheduler.add_job(
+        disable_expired_orders,
+        "interval",
+        minutes=30,
+        id="disable_expired_orders",
+        replace_existing=True,
+    )
+
     webhook_url = config.hook_url
     await bot.set_webhook(
         url=webhook_url,

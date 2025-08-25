@@ -16,6 +16,7 @@ payment_router = Router()
 
 @payment_router.callback_query(lambda c: c.data.startswith("pay_"))
 async def process_payment(callback: CallbackQuery, session: AsyncSession, dao: dict):
+    # I must get order_id here from handler
     booking_dao: BookingDAO = dao["booking"]
     payment_dao: PaymentDAO = dao["payment"]
     user_id = callback.from_user.id

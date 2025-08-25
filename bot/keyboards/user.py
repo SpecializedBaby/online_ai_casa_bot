@@ -1,26 +1,14 @@
-import datetime
-
 from aiocryptopay.models.invoice import Invoice
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 
 
 def general_keyboard_menu() -> ReplyKeyboardMarkup:
     keyboard = [
-        [KeyboardButton(text="/db_pass")],
+        [KeyboardButton(text="/order_offers"), KeyboardButton(text="/my_offers")],
         [KeyboardButton(text="/start"), KeyboardButton(text="/booking")],
         [KeyboardButton(text="/my_bookings"), KeyboardButton(text="/help")]
     ]
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True, is_persistent=True)
-
-
-def get_months_keyboard() -> InlineKeyboardMarkup:
-    today = datetime.date.today()
-    months = [(today + datetime.timedelta(days=30 * i)).strftime("%B") for i in range(5)]
-    keyboard = [
-        [InlineKeyboardButton(text=month, callback_data=f"de_ticket:{month}")]
-        for month in months
-    ]
-    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_keyboard_seat_classes() -> InlineKeyboardMarkup:

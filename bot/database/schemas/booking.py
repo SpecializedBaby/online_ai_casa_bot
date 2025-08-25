@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class BookingBase(BaseModel):
@@ -27,8 +27,8 @@ class CreateBooking(BaseModel):
     route_id: int
     payment_id: Optional[int] = None
     date: str
-    seat_type: str = "standard"
-    quantity: Optional[int] = 1
+    seat_type: str = Field(default="standard")
+    quantity: Optional[int] = Field(default=1)
     price: Optional[float]
     status: str
 

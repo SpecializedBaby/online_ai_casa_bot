@@ -20,6 +20,33 @@ class BaseDAO(Generic[T]):
         if self.model is None:
             raise ValueError("The model should be indicated in the subsidiary")
 
+    async def cancel_expired(self, expire_minutes: int = 60) -> int:
+        """
+        Cancel expired unpaid records for the DAO's model.
+        Assumes the model has `status` and `created_at`.
+        """
+        try:
+            exp_time = datetime.utcnow() - timedelta(minutes=expire_minutes)
+
+            query = (
+                update(self.model)
+                .where(self.model.status == "unpaid")
+                .where(self.model.created_at < exp_time)
+                .values(status="canceled")
+                .execution_options(synchronize_session="fetch")
+            )
+
+            result = await self._session.execute(query)
+            await self._session.flush()
+            return result.rowcount
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error when canceling expired {self.model.__tablename__}: {e}",
+                exc_info=True,
+            )
+            await self._session.rollback()
+            raise
+
     async def find_one_or_none_by_id(self, data_id: int) -> Optional[T]:
         logger.info(f"Get {self.model.__name__} by ID: {data_id}")
         try:

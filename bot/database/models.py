@@ -22,8 +22,8 @@ class User(Base):
     )
     username: Mapped[str | None] = mapped_column(String, nullable=True)
     full_name: Mapped[str | None] = mapped_column(String, nullable=True)
-    age: Mapped[str | None] = mapped_column(String, nullable=True)
-    post_code: Mapped[str | None] = mapped_column(String, nullable=True)
+    age: Mapped[int] = mapped_column(Integer, nullable=True)
+    zip_code: Mapped[str] = mapped_column(String, nullable=True)
 
     bookings: Mapped[list["Booking"]] = relationship(
         "Booking", back_populates="user", cascade="all, delete-orphan"
@@ -82,8 +82,8 @@ class Booking(Base):
     payment: Mapped["Payment"] = relationship("Payment", back_populates="bookings")
 
 
-class RegionalOffer(Base):
-    __tablename__ = "regional_offers"
+class Offer(Base):
+    __tablename__ = "offers"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
@@ -92,6 +92,10 @@ class RegionalOffer(Base):
     url: Mapped[str] = mapped_column(String, nullable=False)
     price: Mapped[float] = mapped_column(Float, nullable=False)
 
+    monthly_passes: Mapped[list["MonthlyPass"]] = relationship(
+        "MonthlyPass", back_populates="offer", cascade="all, delete-orphan"
+    )
+
 
 class MonthlyPass(Base):
     __tablename__ = "monthly_passes"
@@ -99,8 +103,11 @@ class MonthlyPass(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
     payment_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("payments.id"))
+    offer_id: Mapped[int] = mapped_column(Integer, ForeignKey("offers.id"))
 
     month: Mapped[date] = mapped_column(Date, nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False, default="unpaid")
 
     user: Mapped["User"] = relationship("User", back_populates="monthly_passes")
     payment: Mapped["Payment"] = relationship("Payment", back_populates="monthly_passes")
+    offer: Mapped["Offer"] = relationship("Offer", back_populates="monthly_passes")

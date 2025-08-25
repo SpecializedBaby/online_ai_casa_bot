@@ -6,7 +6,7 @@ from aiogram.utils.callback_answer import CallbackAnswerMiddleware
 
 from bot.config import config
 from bot.database.main import async_session_maker
-from bot.handlers import user, admin, other, booking, payment
+from bot.handlers import user, admin, other, booking, payment, offers_manager, offers_ordering
 from bot.middlewares.db import DbSessionMiddleware
 from bot.middlewares.state_clear import StateClearMiddleware
 
@@ -28,6 +28,8 @@ async def start_bot():
     dp.include_router(other.other_router)
     dp.include_router(booking.booking_router)
     dp.include_router(payment.payment_router)
+    dp.include_router(offers_manager.offers_router)
+    dp.include_router(offers_ordering.order_offers)
 
     for admin_id in config.ADMIN_IDS:
         try:

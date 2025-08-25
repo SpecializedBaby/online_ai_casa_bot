@@ -4,7 +4,7 @@ from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
-from bot.database.dao.dao import UserDAO, BookingDAO, PaymentDAO, RouteDAO
+from bot.database.dao.dao import UserDAO, BookingDAO, PaymentDAO, RouteDAO, OfferDAO, MonthlyPassDAO
 
 
 class DbSessionMiddleware(BaseMiddleware):
@@ -24,6 +24,8 @@ class DbSessionMiddleware(BaseMiddleware):
                 "user": UserDAO(session),
                 "booking": BookingDAO(session),
                 "payment": PaymentDAO(session),
-                "route": RouteDAO(session)
+                "route": RouteDAO(session),
+                "offer": OfferDAO(session),
+                "pass": MonthlyPassDAO(session)
             }
             return await handler(event, data)

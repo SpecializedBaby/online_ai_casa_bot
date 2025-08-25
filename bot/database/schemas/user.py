@@ -16,3 +16,10 @@ class UserCreate(UserBase):
     full_name: str
     birthday: Optional[str] = None
     address: Optional[str] = None
+
+
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    full_name: str
+    age: int
+    zip_code: str

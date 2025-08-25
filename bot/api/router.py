@@ -3,7 +3,7 @@ from faststream.rabbit.fastapi import RabbitRouter
 from loguru import logger
 from bot.create_bot import bot
 from bot.config import config, scheduler, broker
-from bot.database.dao.dao import BookingDAO
+from bot.database.dao.dao import BookingDAO, MonthlyPassDAO
 from bot.database.main import async_session_maker
 from bot.services.crypto import get_invoice_status
 
@@ -14,7 +14,14 @@ router = RabbitRouter(url=config.rabbitmq_url)
 @router.subscriber("expire_check")
 async def schedule_expiration():
     scheduler.add_job(
-        disable_booking,
+        disable_expired_bookings,
+        "date",
+        run_date=datetime.utcnow() + timedelta(minutes=30),
+        id="disable_expired_bookings",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        disable_expired_orders,
         "date",
         run_date=datetime.utcnow() + timedelta(minutes=30),
         id="disable_expired_bookings",
@@ -76,9 +83,16 @@ async def schedule_user_notifications(user_id: int):
         )
 
 
-async def disable_booking():
+async def disable_expired_bookings():
     async with async_session_maker() as session:
-        await BookingDAO(session).cancel_expired_books()
+        result = await BookingDAO(session).cancel_expired(expire_minutes=60)
+        logger.info(f"Canceled {result} expired bookings")
+
+
+async def disable_expired_orders():
+    async with async_session_maker() as session:
+        result = await MonthlyPassDAO(session).cancel_expired(expire_minutes=60)
+        logger.info(f"Canceled {result} expired monthly passes")
 
 
 async def check_invoice_status(booking_id: int, invoice_id: int, user_id: int):

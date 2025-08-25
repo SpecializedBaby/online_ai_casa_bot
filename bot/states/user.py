@@ -7,9 +7,14 @@ class JourneyBooking(StatesGroup):
     travel_date = State()
     seat_type = State()
     quantity = State()
+    confirmation = State()
 
 
-class GermanyPassOrder(StatesGroup):
-    birthday = State()
-    address = State()
+class OfferOrder(StatesGroup):
+    user_id = State()
+    offer_id = State()
+    full_name = State
+    age = State()
+    zip_code = State()
     month = State()
+    confirmation = State()

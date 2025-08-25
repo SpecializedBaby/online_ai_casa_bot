@@ -5,9 +5,9 @@ from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import broker
-from bot.database.dao.dao import UserDAO, BookingDAO
-from bot.database.schemas.booking import BookingsByUser
+from bot.database.dao.dao import UserDAO, BookingDAO, MonthlyPassDAO
 from bot.database.schemas.user import UserCreate
+from bot.database.schemas.monthly_pass import PassStatus
 from bot.keyboards.user import general_keyboard_menu
 
 user_router = Router()
@@ -50,6 +50,31 @@ async def cmd_start(message: Message, session: AsyncSession, dao: dict):
     except Exception as e:
         logger.error(f"Error in /start for user {user_id}: {e}", exc_info=True)
         await message.answer("❌ Something went wrong. Please try again later.")
+
+
+@user_router.message(Command("my_offers"))
+async def user_ordered_offers(message: Message, session: AsyncSession, dao: dict):
+    """Handle /my_offers command and show all offers for user."""
+    pass_dao: MonthlyPassDAO = dao["pass"]
+
+    try:
+        passes = await pass_dao.find_all(filters=PassStatus(status="paid"))
+        if not passes:
+            await message.answer(f" ❌ You dont have any offers yet!")
+            return
+
+        text_lines = []
+        for i, _pass in enumerate(passes, start=1):
+            text_lines.append(
+                f"🎫 <b>Monthly Pass #{i}</b>\n"
+                f"Pass name: {_pass.offer.name}"
+                f"Month: {_pass.month}\n"
+                f"Status: {_pass.status}"
+            )
+        await message.answer("\n".join(text_lines))
+    except Exception as e:
+        logger.error(f"Error in /my_offers for user {message.from_user.id}: {e}", exc_info=True)
+        await message.answer("❌ Could not fetch your bookings. Please try again later.")
 
 
 @user_router.message(Command("my_bookings"))
